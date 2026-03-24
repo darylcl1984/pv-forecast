@@ -233,7 +233,7 @@
 </div>
 
 <div class="weekly-section">
-  <div class="section-title">7-Day Outlook</div>
+  <div class="section-title" id="sectionTitle">7-Day Outlook</div>
   <div class="weekly-scroll" id="weeklyScroll"></div>
 </div>
 
@@ -389,6 +389,7 @@ function populateFields() {
   $('cfgEvThreshold').value = config.evThreshold;
   $('locationLabel').textContent = (config.locationName || 'Set location below') + ' · ' +
     new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short'});
+  $('sectionTitle').textContent = '7-Day Outlook' + (config.locationName ? ' — ' + config.locationName : '');
   $('configSummary').textContent = config.locationName ?
     `${config.systemKw}kW · ${config.inverterKw}kW inv · PR ${config.pr} · ${config.tilt}° tilt · ${config.azimuth}° az` : '';
   const pc = $('presetContainer');
