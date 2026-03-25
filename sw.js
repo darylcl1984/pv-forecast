@@ -1,9 +1,7 @@
-const CACHE_NAME = 'solar-forecast-v1';
+const CACHE_NAME = 'solar-forecast-v2';
 
-// Static assets to pre-cache on install
-const STATIC_ASSETS = [
-  './',
-  './index.html',
+// CDN assets only — versioned/immutable, safe to cache-first indefinitely
+const CDN_ASSETS = [
   'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js',
   'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap'
 ];
@@ -11,7 +9,7 @@ const STATIC_ASSETS = [
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => Promise.allSettled(STATIC_ASSETS.map(url => cache.add(url))))
+      .then(cache => Promise.allSettled(CDN_ASSETS.map(url => cache.add(url))))
       .then(() => self.skipWaiting())
   );
 });
@@ -27,15 +25,32 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // Pass API calls straight through — the app handles offline via localStorage cache
+  // Pass Open-Meteo API calls straight through
   if (event.request.url.includes('open-meteo.com')) return;
 
-  // Cache-first for static assets (fonts, Chart.js, app shell)
+  // Network-first for the app shell (index.html / root) — always gets latest on deploy
+  const url = new URL(event.request.url);
+  const isAppShell = url.pathname === '/' || url.pathname.endsWith('index.html');
+  if (isAppShell) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request)) // offline fallback
+    );
+    return;
+  }
+
+  // Cache-first for CDN assets (Chart.js, fonts) — immutable, no need to re-fetch
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
       return fetch(event.request).then(response => {
-        // Only cache valid same-origin or CORS responses
         if (response.ok && response.type !== 'opaque') {
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
