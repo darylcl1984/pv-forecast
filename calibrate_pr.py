@@ -14,13 +14,13 @@ import glob
 import sys
 
 # ── System constants (edit to match your setup) ──
-PV_KW = 10.0
-INVERTER_KW = 8.0
-ASSUMED_PR = 0.82
-TILT = 22.5
-AZIMUTH = 180
-LAT = -33.87
-LON = 151.21
+PV_KW      = 6.6    # Total panel capacity in kW
+INVERTER_KW = 5.0   # Inverter output limit in kW
+ASSUMED_PR = 0.80   # Starting performance ratio (typical range: 0.75–0.85)
+TILT       = 25     # Panel tilt in degrees
+AZIMUTH    = 180    # Panel azimuth (Open-Meteo convention: 0=south, 180=north)
+LAT        = 0.0    # Your latitude  — replace before running
+LON        = 0.0    # Your longitude — replace before running
 
 def load_sungrow_csvs(paths):
     dfs = []
@@ -36,7 +36,7 @@ def fetch_gti(start_date, end_date):
         f"https://api.open-meteo.com/v1/forecast"
         f"?latitude={LAT}&longitude={LON}"
         f"&hourly=global_tilted_irradiance"
-        f"&timezone=Australia%2FSydney"
+        f"&timezone=auto"
         f"&start_date={start_date}&end_date={end_date}"
         f"&tilt={TILT}&azimuth={AZIMUTH}"
     )

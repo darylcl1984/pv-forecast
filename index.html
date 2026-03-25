@@ -77,6 +77,15 @@
   .day-card .day-kwh { font-size: 15px; font-weight: 700; color: var(--sun); font-family: var(--mono); }
   .day-card .day-unit { font-size: 9px; color: var(--text-3); }
   .day-card .day-cloud { font-size: 10px; color: var(--cloud); margin-top: 2px; }
+  .kwh-badge {
+    display: inline-flex; align-items: baseline; gap: 2px;
+    padding: 3px 8px; border-radius: 20px; margin: 3px 0;
+  }
+  .kwh-badge .kval { font-size: 15px; font-weight: 700; font-family: var(--mono); }
+  .kwh-badge .kunit { font-size: 9px; font-weight: 500; }
+  .kwh-badge.ev-good  { background: #E5F9EB; color: #1B7A34; }
+  .kwh-badge.ev-part  { background: var(--sun-light); color: #B87200; }
+  .kwh-badge.ev-none  { background: #FEECEC; color: #C0392B; }
 
   .week-bar-wrap { padding: 10px 16px 0; }
   .week-bars {
@@ -103,9 +112,11 @@
   .stat-label { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); margin-bottom: 4px; }
   .stat-value { font-size: 22px; font-weight: 700; font-family: var(--mono); letter-spacing: -0.02em; line-height: 1; }
   .stat-unit { font-size: 10px; color: var(--text-3); margin-top: 2px; }
-  .stat-value.gold { color: var(--sun); }
-  .stat-value.blue { color: var(--sky); }
-  .stat-value.green { color: var(--ev); }
+  .stat-value.gold  { color: var(--sun); }
+  .stat-value.blue  { color: var(--sky); }
+  .stat-value.green { color: #1B7A34; }
+  .stat-value.amber { color: #B87200; }
+  .stat-value.red   { color: #C0392B; }
 
   .sun-strip {
     display: flex; justify-content: center; gap: 20px;
@@ -149,7 +160,8 @@
   .ev-card .ev-icon { font-size: 18px; }
   .ev-card .ev-label { font-weight: 500; }
   .ev-card .ev-detail { font-family: var(--mono); font-size: 11px; opacity: 0.8; }
-  .ev-card.no-window { background: var(--surface-alt); border-color: var(--border); color: var(--text-3); }
+  .ev-card.part-window { background: var(--sun-light); border-color: rgba(245,166,35,0.3); color: #B87200; }
+  .ev-card.no-window   { background: #FEECEC; border-color: rgba(192,57,43,0.2); color: #C0392B; }
 
   .config-toggle {
     display: block; margin: 16px auto 0;
@@ -244,12 +256,12 @@
 <div class="stats">
   <div class="stat-card">
     <div class="stat-label">Estimated</div>
-    <div class="stat-value gold" id="dailyKwh">—</div>
+    <div class="stat-value" id="dailyKwh">—</div>
     <div class="stat-unit">kWh</div>
   </div>
   <div class="stat-card">
     <div class="stat-label">Peak</div>
-    <div class="stat-value blue" id="peakKw">—</div>
+    <div class="stat-value gold" id="peakKw">—</div>
     <div class="stat-unit">kW</div>
   </div>
   <div class="stat-card">
@@ -525,7 +537,7 @@ function processData(data) {
     // EV window: longest consecutive run above threshold during daylight
     let evStart=null, evEnd=null, evBest=0, curS=null, curL=0;
     for (const r of rows) {
-      if (r.kw >= config.evThreshold && r.hour >= 6 && r.hour <= 18) {
+      if (Math.round(r.kw * 10) / 10 >= config.evThreshold && r.hour >= 6 && r.hour <= 18) {
         if (curS === null) curS = r.hour;
         curL++;
       } else {
@@ -556,7 +568,8 @@ function renderWeekly() {
     card.className = 'day-card'+(i===selectedDayIdx?' active':'');
     const wi = wmoEmoji(day.wCode);
     const temps = day.tMin !== null ? `${Math.round(day.tMin)}°/${Math.round(day.tMax)}°` : '';
-    card.innerHTML = `<div class="day-name">${dayName(day.date)}</div><div class="day-date">${dayDate(day.date)}</div><div class="day-kwh">${day.totalKwh.toFixed(0)}</div><div class="day-unit">kWh</div><div class="day-cloud">${wi} ${temps}</div>`;
+    const evClass = day.evHours > 2 ? 'ev-good' : day.evHours >= 1 ? 'ev-part' : 'ev-none';
+    card.innerHTML = `<div class="day-name">${dayName(day.date)}</div><div class="day-date">${dayDate(day.date)}</div><div class="kwh-badge ${evClass}"><span class="kval">${day.totalKwh.toFixed(0)}</span><span class="kunit">kWh</span></div><div class="day-cloud">${wi} ${temps}</div>`;
     card.onclick = () => { selectedDayIdx=i; renderWeekly(); renderSelectedDay(); };
     scroll.appendChild(card);
 
@@ -570,6 +583,8 @@ function renderWeekly() {
 function renderSelectedDay() {
   const day = allDays[selectedDayIdx];
   if (!day) return;
+  const evColour = day.evHours > 2 ? 'green' : day.evHours >= 1 ? 'amber' : 'red';
+  $('dailyKwh').className = 'stat-value ' + evColour;
   $('dailyKwh').textContent = day.totalKwh.toFixed(1);
   $('peakKw').textContent = day.peakKw.toFixed(1);
 
@@ -592,8 +607,12 @@ function renderSelectedDay() {
   $('weatherTemps').textContent = day.tMin !== null ? `${Math.round(day.tMin)}° / ${Math.round(day.tMax)}°` : '—';
 
   const ev = $('evCard');
-  if (day.evHours > 0) {
-    ev.classList.remove('no-window');
+  ev.classList.remove('no-window', 'part-window');
+  if (day.evHours > 2) {
+    $('evLabel').textContent = `EV charge window: ${fmtTime(day.evStart)} – ${fmtTime(day.evEnd)}`;
+    $('evDetail').textContent = `${day.evHours}h above ${config.evThreshold}kW`;
+  } else if (day.evHours >= 1) {
+    ev.classList.add('part-window');
     $('evLabel').textContent = `EV charge window: ${fmtTime(day.evStart)} – ${fmtTime(day.evEnd)}`;
     $('evDetail').textContent = `${day.evHours}h above ${config.evThreshold}kW`;
   } else {
@@ -613,7 +632,7 @@ function renderChart(day, isToday, nowH) {
 
   // EV window: kW values only within the window, null elsewhere (fills under the solar curve)
   const evData = rows.map(r =>
-    (day.evStart!==null && r.hour>=day.evStart && r.hour<day.evEnd) ? r.kw : null
+    (day.evStart!==null && r.hour>=day.evStart && r.hour<=day.evEnd) ? r.kw : null
   );
 
   const grad = ctx.createLinearGradient(0,0,0,260);
@@ -625,9 +644,9 @@ function renderChart(day, isToday, nowH) {
   evGrad.addColorStop(0,'rgba(52,199,89,0.25)');
   evGrad.addColorStop(1,'rgba(52,199,89,0.03)');
 
-  const ptBg = rows.map(r => isToday && Math.abs(r.hour-nowH)<0.6 ? '#F5A623' : 'transparent');
-  const ptR = rows.map(r => isToday && Math.abs(r.hour-nowH)<0.6 ? 6 : 0);
-  const ptBorder = rows.map(r => isToday && Math.abs(r.hour-nowH)<0.6 ? '#fff' : 'transparent');
+  const ptBg = rows.map(() => 'transparent');
+  const ptR = rows.map(() => 0);
+  const ptBorder = rows.map(() => 'transparent');
 
   const yMax = Math.max(config.inverterKw * 1.15, Math.max(...kwData) * 1.1);
 
@@ -728,7 +747,40 @@ function renderChart(day, isToday, nowH) {
         };
         if(day.sunriseH) draw(fmtTime(day.sunriseH),'#F5A623','☀ Rise');
         if(day.sunsetH) draw(fmtTime(day.sunsetH),'#4A9EE8','☾ Set');
-        if(isToday) draw(fmtTime(nowH),'#F5A623','● Now');
+      }
+    },
+    {
+      id:'nowMarker',
+      afterDraw(ci) {
+        if (!isToday) return;
+        const {ctx, scales:{x, y}} = ci;
+        // Find the two surrounding rows to interpolate exact position
+        let i0 = -1;
+        for (let i = 0; i < rows.length - 1; i++) {
+          if (rows[i].hour <= nowH && rows[i+1].hour > nowH) { i0 = i; break; }
+        }
+        if (i0 < 0) return;
+        const frac = (nowH - rows[i0].hour) / (rows[i0+1].hour - rows[i0].hour);
+        const xPos = x.getPixelForValue(i0) + frac * (x.getPixelForValue(i0+1) - x.getPixelForValue(i0));
+        const kwNow = rows[i0].kw + frac * (rows[i0+1].kw - rows[i0].kw);
+        const yPos = y.getPixelForValue(kwNow);
+        ctx.save();
+        // Dotted crosshair lines
+        ctx.setLineDash([2, 4]);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(245,166,35,0.55)';
+        ctx.beginPath(); ctx.moveTo(xPos, yPos); ctx.lineTo(xPos, y.bottom); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(xPos, yPos); ctx.lineTo(x.left, yPos); ctx.stroke();
+        // Single orange dot
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.arc(xPos, yPos, 5, 0, Math.PI * 2);
+        ctx.fillStyle = '#F5A623';
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
       }
     }]
   });

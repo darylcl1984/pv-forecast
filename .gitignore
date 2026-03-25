@@ -1,0 +1,10 @@
+# VS Code workspace file
+*.code-workspace
+
+# Sungrow / inverter CSV exports — contain real production data, do not commit
+*.csv
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
