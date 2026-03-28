@@ -1,9 +1,6 @@
-# pv-forecast
-App for PV output forecasting based off user's location and solar configuration
-
 # Solar Forecast PWA
 
-A mobile-first progressive web app that estimates photovoltaic output using [Open-Meteo's](https://open-meteo.com/) Global Tilted Irradiance (GTI) forecast API. No backend, no build step — a single HTML file you can host anywhere.
+A responsive progressive web app that estimates photovoltaic output using [Open-Meteo's](https://open-meteo.com/) Global Tilted Irradiance (GTI) forecast API. No backend, no build step — a single HTML file you can host anywhere.
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 
@@ -13,15 +10,18 @@ Most solar forecast tools are either locked behind inverter vendor apps, require
 
 ## Features
 
-- **7-day forecast** with scrollable day cards, weather icons, and temperature
-- **Hourly output chart** (Chart.js) with solar curve, cloud cover overlay, and inverter limit line
-- **EV charge window** detection — finds the best window above your configured kW threshold
-- **Sunrise/sunset markers** and current-time indicator on today's chart
-- **Configurable system parameters** — array size, inverter limit, performance ratio, tilt, azimuth
-- **Location search** with typeahead autocomplete via Open-Meteo geocoding
-- **Offline support** — caches the last API response (6hr TTL) for use without connectivity
-- **Pull-to-refresh** and auto-refresh every 30 minutes
-- **Zero dependencies** beyond CDN-loaded Chart.js and Google Fonts
+- **Responsive layout** — two-column desktop view (≥900px) with sticky sidebar; full mobile experience with pull-to-refresh
+- **7-day forecast cards** — colour-coded kWh badges (green/amber/red) indicating EV charge window quality, with weather icon and temperature range
+- **Hourly PV output chart** — solar curve, cloud cover overlay, diagonal-hatched EV charge window, inverter clipping line, and sunrise/sunset markers
+- **Live "Now" indicator** — interpolated dot on today's chart showing current estimated output
+- **EV charge window detection** — longest consecutive block above your kW threshold, with quality rating (great / fair / low yield)
+- **Configurable system parameters** — array size, inverter limit, performance ratio, tilt, azimuth; each field has an inline hint explaining the parameter
+- **Default value indicators** — config fields still at factory defaults are visually flagged so you know what to personalise
+- **Setup prompt** — animated ring on the Configure button (mobile) when no location is set
+- **Location search** with typeahead autocomplete via Open-Meteo geocoding, plus browser geolocation on first launch
+- **PWA installable** — Add to Home Screen on Android Chrome and iOS Safari; opens as a standalone app
+- **Offline support** — 6hr localStorage cache; service worker serves the app shell when offline
+- **Auto-refresh** every 30 minutes; pull-to-refresh on mobile
 
 ## How It Works
 
@@ -78,10 +78,12 @@ The script produces per-day and overall PR statistics, identifies clipped hours,
 
 ## Tech Stack
 
-- Single HTML file (~800 lines) — HTML, CSS, JS, no build tools
+- Single HTML file (`index.html`) — HTML, CSS, JS, no build tools, no framework
+- `sw.js` — service worker for PWA caching (network-first for app shell, cache-first for CDN assets)
+- `manifest.json` + SVG icons — PWA install support for Android and iOS
 - [Chart.js 4.4.1](https://www.chartjs.org/) via CDN
-- [Open-Meteo API](https://open-meteo.com/) (free tier, CC BY 4.0)
-- Google Fonts: Outfit + IBM Plex Mono
+- [Open-Meteo API](https://open-meteo.com/) (free tier, CC BY 4.0) — GTI forecast and geocoding
+- Google Fonts: Outfit · IBM Plex Mono · Space Grotesk
 
 ## Limitations
 

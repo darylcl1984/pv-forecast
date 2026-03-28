@@ -10,16 +10,16 @@
 <title>Solar Forecast</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --sun: #F5A623; --sun-light: #FFF3D6; --sun-mid: #FCCF5A;
+    --sun: #E8950E; --sun-light: #FFF3D6; --sun-mid: #FCCF5A;
     --sky: #4A9EE8; --sky-light: #E8F4FD;
-    --cloud: #B0BEC5; --cloud-light: #ECEFF1;
+    --cloud: #90A4AE; --cloud-light: #ECEFF1;
     --ev: #34C759; --ev-light: #E5F9EB;
-    --bg: #F8F7F4; --surface: #FFFFFF; --surface-alt: #F2F1EE;
+    --bg: #F8F7F4; --surface: #FEFCF8; --surface-alt: #F2F1EE;
     --text: #1D1D1F; --text-2: #6E6E73; --text-3: #AEAEB2;
     --border: rgba(0,0,0,0.06); --border-strong: rgba(0,0,0,0.1);
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
@@ -81,11 +81,11 @@
     display: inline-flex; align-items: baseline; gap: 2px;
     padding: 3px 8px; border-radius: 20px; margin: 3px 0;
   }
-  .kwh-badge .kval { font-size: 15px; font-weight: 700; font-family: var(--mono); }
-  .kwh-badge .kunit { font-size: 9px; font-weight: 500; }
-  .kwh-badge.ev-good  { background: #E5F9EB; color: #1B7A34; }
-  .kwh-badge.ev-part  { background: var(--sun-light); color: #B87200; }
-  .kwh-badge.ev-none  { background: #FEECEC; color: #C0392B; }
+  .kwh-badge .kval { font-size: 15px; font-weight: 500; font-family: var(--mono); }
+  .kwh-badge .kunit { font-size: 9px; font-weight: 400; }
+  .kwh-badge.ev-good  { background: #F0FAF4; color: #3D8B5E; }
+  .kwh-badge.ev-part  { background: #FDF6EC; color: #B87200; }
+  .kwh-badge.ev-none  { background: #FBEAE8; color: #BE3D28; }
 
   .week-bar-wrap { padding: 10px 16px 0; }
   .week-bars {
@@ -110,13 +110,13 @@
     box-shadow: var(--shadow-sm);
   }
   .stat-label { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); margin-bottom: 4px; }
-  .stat-value { font-size: 22px; font-weight: 700; font-family: var(--mono); letter-spacing: -0.02em; line-height: 1; }
+  .stat-value { font-size: 19px; font-weight: 500; font-family: 'Space Grotesk', var(--font); letter-spacing: -0.01em; line-height: 1; }
   .stat-unit { font-size: 10px; color: var(--text-3); margin-top: 2px; }
-  .stat-value.gold  { color: var(--sun); }
-  .stat-value.blue  { color: var(--sky); }
-  .stat-value.green { color: #1B7A34; }
-  .stat-value.amber { color: #B87200; }
-  .stat-value.red   { color: #C0392B; }
+  .stat-value.gold,  .stat-unit.gold  { color: var(--sun); }
+  .stat-value.blue,  .stat-unit.blue  { color: var(--sky); }
+  .stat-value.green, .stat-unit.green { color: #3D8B5E; }
+  .stat-value.amber, .stat-unit.amber { color: #B87200; }
+  .stat-value.red,   .stat-unit.red   { color: #BE3D28; }
 
   .sun-strip {
     display: flex; justify-content: center; gap: 20px;
@@ -163,12 +163,30 @@
   .ev-card.part-window { background: var(--sun-light); border-color: rgba(245,166,35,0.3); color: #B87200; }
   .ev-card.no-window   { background: #FEECEC; border-color: rgba(192,57,43,0.2); color: #C0392B; }
 
+  @keyframes ring-ccw { to { transform: rotate(-360deg); } }
+  .config-btn-wrap {
+    position: relative; display: block;
+    width: fit-content; margin: 16px auto 0;
+    border-radius: calc(var(--radius-xs) + 3px);
+    padding: 2px; overflow: hidden;
+  }
+  .config-btn-wrap::before {
+    content: ''; position: absolute; inset: -150%;
+    background: conic-gradient(
+      rgba(232,149,14,0) 0%, rgba(232,149,14,0) 30%,
+      rgba(232,149,14,0.75) 50%,
+      rgba(232,149,14,0) 70%, rgba(232,149,14,0) 100%
+    );
+    animation: ring-ccw 4s linear infinite;
+  }
+  .config-btn-wrap.no-ring::before { display: none; }
   .config-toggle {
-    display: block; margin: 16px auto 0;
+    display: block; margin: 0;
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius-xs); padding: 8px 18px;
     color: var(--text-2); font-size: 12px; font-weight: 500;
     font-family: var(--font); cursor: pointer; transition: all 0.15s ease;
+    position: relative; z-index: 1;
   }
   .config-toggle:active { transform: scale(0.97); }
   .config-panel { max-width: 500px; margin: 12px auto 0; padding: 0 16px; animation: slideDown 0.25s ease; }
@@ -178,6 +196,24 @@
     border: 1px solid var(--border); padding: 18px; box-shadow: var(--shadow-md);
   }
   .field-label { display: block; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); margin-bottom: 5px; }
+  .hint-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 1px solid var(--text-3); color: var(--text-3);
+    font-size: 8px; font-weight: 600; font-style: italic;
+    font-family: var(--font); text-transform: none; letter-spacing: 0;
+    cursor: pointer; opacity: 0.55; vertical-align: middle; margin-left: 4px;
+    user-select: none; -webkit-user-select: none; transition: opacity 0.15s;
+    flex-shrink: 0; line-height: 1;
+  }
+  .hint-icon:hover { opacity: 1; }
+  .hint-text {
+    display: none; font-size: 10px; color: var(--text-2); line-height: 1.4;
+    margin: 3px 0 5px; padding: 5px 8px; font-style: italic;
+    background: var(--surface-alt); border-radius: 5px;
+    border-left: 2px solid rgba(232,149,14,0.5);
+  }
+  .hint-text.hint-visible { display: block; }
   .text-input, .num-input {
     background: var(--surface-alt); border: 1px solid var(--border-strong);
     border-radius: var(--radius-xs); padding: 9px 12px; color: var(--text);
@@ -186,6 +222,7 @@
   .text-input:focus, .num-input:focus { border-color: var(--sun); box-shadow: 0 0 0 3px rgba(245,166,35,0.1); }
   .text-input::placeholder { color: var(--text-3); }
   .num-input { font-family: var(--mono); font-size: 13px; }
+  .num-input.is-default { border-bottom: 1.5px dashed rgba(232,149,14,0.5); }
   .search-row { display: flex; gap: 8px; margin-bottom: 14px; }
   .autocomplete-wrap { flex: 1; position: relative; }
   .autocomplete-list {
@@ -219,6 +256,7 @@
   .ev-config { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
   .footer { text-align: center; padding: 20px 16px 0; font-size: 10px; font-family: var(--mono); color: var(--text-3); }
   .footer a { color: var(--text-3); }
+  .sidebar-footer { display: none; }
   .offline-badge {
     display: none; position: fixed; top: 8px; right: 8px; z-index: 200;
     background: var(--cloud); color: white; font-size: 10px; font-weight: 600;
@@ -227,6 +265,78 @@
   .offline-badge.show { display: block; }
   .hidden { display: none !important; }
   .error-msg { text-align: center; padding: 32px; color: #E53935; font-size: 13px; }
+
+  /* ── Desktop layout ── */
+  @media (min-width: 900px) {
+    .header {
+      position: static;
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 28px; text-align: left;
+      max-width: 1280px; margin: 0 auto;
+    }
+    .header-icon { margin-bottom: 0; flex-shrink: 0; }
+    .header h1 { font-size: 18px; }
+    .header-sub { margin-top: 1px; }
+
+    .app-layout {
+      display: grid; grid-template-columns: 300px 1fr;
+      max-width: 1280px; margin: 0 auto;
+      border-top: 1px solid var(--border);
+    }
+    .left-col {
+      position: sticky; top: 0; height: 100vh;
+      overflow-y: auto; scrollbar-width: none;
+      border-right: 1px solid var(--border);
+      padding-bottom: 24px;
+    }
+    .left-col::-webkit-scrollbar { display: none; }
+    .right-col { min-width: 0; padding-bottom: 32px; }
+
+    /* Vertical day cards */
+    .weekly-section { padding: 16px 12px 0; }
+    .weekly-scroll { flex-direction: column; overflow-x: visible; gap: 6px; }
+    .day-card {
+      display: flex; align-items: center; gap: 10px;
+      min-width: unset; width: 100%; text-align: left; padding: 9px 12px;
+    }
+    .day-card .day-name { width: 28px; margin: 0; }
+    .day-card .day-date { flex: 1; font-size: 12px; margin: 0; }
+    .day-card .day-cloud { margin-top: 0; }
+
+    /* Hide mini bar chart — cards convey the same info */
+    .week-bar-wrap { display: none; }
+
+    /* Config always visible in left col */
+    .config-btn-wrap { display: none; }
+    .config-toggle { display: none; }
+    .config-panel.hidden { display: block !important; }
+    .config-panel { margin: 16px 0 0; padding: 0 12px; animation: none; }
+    .config-panel .config-inner {
+      box-shadow: none; border-color: transparent;
+      background: transparent; padding: 0;
+    }
+    .config-panel .config-inner .field-label { color: var(--text-3); }
+
+    /* Location in section title hidden on desktop — header shows it */
+    .section-location { display: none; }
+
+    /* Right col */
+    .stats { max-width: unset; padding: 20px 20px 0; }
+    .sun-strip { padding: 10px 20px; justify-content: flex-start; }
+    .weather-strip { padding: 6px 20px 10px; justify-content: flex-start; }
+    .chart-section { max-width: unset; padding: 0 16px; }
+    .chart-canvas-wrap { height: 320px; }
+    .ev-strip { max-width: unset; margin: 10px 0 0; padding: 0 16px; }
+
+    /* Footer: hide main footer on desktop, use sidebar-footer instead */
+    .footer { display: none; }
+    .sidebar-footer {
+      display: block; font-size: 10px; font-family: var(--mono); color: var(--text-3);
+      padding: 12px 12px 16px; border-top: 1px solid var(--border); margin-top: 16px;
+      position: sticky; bottom: 0; background: var(--bg);
+    }
+    .sidebar-footer a { color: var(--text-3); }
+  }
 </style>
 </head>
 <body>
@@ -244,10 +354,58 @@
   <p class="header-sub" id="locationLabel">Loading…</p>
 </div>
 
+<div class="app-layout">
+<div class="left-col">
+
 <div class="weekly-section">
-  <div class="section-title" id="sectionTitle">7-Day Outlook</div>
+  <div class="section-title">7-Day Outlook<span class="section-location" id="sectionTitle"></span></div>
   <div class="weekly-scroll" id="weeklyScroll"></div>
 </div>
+
+<div class="config-btn-wrap no-ring" id="configBtnWrap">
+  <button class="config-toggle" id="configToggle">Configure System ↓</button>
+</div>
+
+<div class="config-panel hidden" id="configPanel">
+  <div class="config-inner">
+    <div>
+      <label class="field-label">Location</label>
+      <div class="search-row">
+        <div class="autocomplete-wrap">
+          <input class="text-input" id="addressInput" placeholder="Enter address or city…" autocomplete="off">
+          <div class="autocomplete-list hidden" id="acList"></div>
+        </div>
+        <button class="btn-primary" id="searchBtn">Search</button>
+      </div>
+    </div>
+    <div style="margin-bottom:14px">
+      <label class="field-label">Quick Presets</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap" id="presetContainer"></div>
+    </div>
+    <div class="param-grid">
+      <div><label class="field-label">Array (kW)<span class="hint-icon" data-hint="Total nameplate capacity of your panels, e.g. 6.6kW for 20 × 330W panels.">i</span></label><input class="num-input" id="cfgSystem" type="number" step="0.5"></div>
+      <div><label class="field-label">Inverter (kW)<span class="hint-icon" data-hint="Max AC output of your inverter. Output clips at this value on sunny peaks.">i</span></label><input class="num-input" id="cfgInverter" type="number" step="0.5"></div>
+      <div><label class="field-label">Perf. Ratio<span class="hint-icon" data-hint="Real-world efficiency factor accounting for heat, shading, and wiring losses. Typically 0.75–0.85.">i</span></label><input class="num-input" id="cfgPR" type="number" step="0.01"></div>
+      <div><label class="field-label">Tilt (°)<span class="hint-icon" data-hint="Panel angle from horizontal. 0° = flat roof, 90° = vertical wall. Typical roofs: 15–35°.">i</span></label><input class="num-input" id="cfgTilt" type="number" step="1"></div>
+      <div><label class="field-label">Azimuth (°)<span class="hint-icon" data-hint="Panel direction. Open-Meteo convention: 0° = south, 180° = north, −90° = east, 90° = west.">i</span></label><input class="num-input" id="cfgAzimuth" type="number" step="5"></div>
+      <div><label class="field-label">Forecast Days</label><input class="num-input" id="cfgDays" type="number" step="1" min="1" max="16"></div>
+    </div>
+    <div class="ev-config">
+      <label class="field-label">EV Charging Threshold (kW)<span class="hint-icon" data-hint="Minimum output needed to count as a viable EV charging hour. Set to your charger's rated draw.">i</span></label>
+      <input class="num-input" id="cfgEvThreshold" type="number" step="0.5" style="max-width:160px">
+    </div>
+    <button class="btn-primary" id="applyBtn" style="width:100%;margin-top:14px;padding:11px">Update Forecast</button>
+    <div class="config-summary" id="configSummary"></div>
+  </div>
+</div>
+
+<div class="sidebar-footer">
+  Data from <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a> · GTI Forecast
+  <div style="margin-top:3px">Auto-refreshes every 30 min</div>
+</div>
+
+</div><!-- /left-col -->
+<div class="right-col">
 
 <div class="week-bar-wrap">
   <div class="week-bars" id="weekBars"></div>
@@ -257,12 +415,12 @@
   <div class="stat-card">
     <div class="stat-label">Estimated</div>
     <div class="stat-value" id="dailyKwh">—</div>
-    <div class="stat-unit">kWh</div>
+    <div class="stat-unit" id="dailyCaption">kWh</div>
   </div>
   <div class="stat-card">
     <div class="stat-label">Peak</div>
     <div class="stat-value gold" id="peakKw">—</div>
-    <div class="stat-unit">kW</div>
+    <div class="stat-unit gold">kW</div>
   </div>
   <div class="stat-card">
     <div class="stat-label">Now</div>
@@ -296,7 +454,7 @@
       <canvas id="solarChart"></canvas>
     </div>
     <div class="chart-legend">
-      <span><span class="legend-dot" style="background:var(--sun)"></span> Output</span>
+      <span><span class="legend-dot" style="background:var(--sun)"></span> PV Output</span>
       <span><span class="legend-dot" style="background:rgba(144,164,174,0.5)"></span> Cloud %</span>
       <span><span class="legend-dot" style="background:var(--ev);opacity:0.5"></span> EV Window</span>
       <span><span class="legend-dot" style="background:transparent;border:1.5px dashed rgba(229,57,53,0.5)"></span> Inv. Limit</span>
@@ -314,44 +472,13 @@
   </div>
 </div>
 
-<button class="config-toggle" id="configToggle">Configure System ↓</button>
+</div><!-- /right-col -->
+</div><!-- /app-layout -->
 
-<div class="config-panel hidden" id="configPanel">
-  <div class="config-inner">
-    <div>
-      <label class="field-label">Location</label>
-      <div class="search-row">
-        <div class="autocomplete-wrap">
-          <input class="text-input" id="addressInput" placeholder="Enter address or city…" autocomplete="off">
-          <div class="autocomplete-list hidden" id="acList"></div>
-        </div>
-        <button class="btn-primary" id="searchBtn">Search</button>
-      </div>
-    </div>
-    <div style="margin-bottom:14px">
-      <label class="field-label">Quick Presets</label>
-      <div style="display:flex;gap:6px;flex-wrap:wrap" id="presetContainer"></div>
-    </div>
-    <div class="param-grid">
-      <div><label class="field-label">Array (kW)</label><input class="num-input" id="cfgSystem" type="number" step="0.5"></div>
-      <div><label class="field-label">Inverter (kW)</label><input class="num-input" id="cfgInverter" type="number" step="0.5"></div>
-      <div><label class="field-label">Perf. Ratio</label><input class="num-input" id="cfgPR" type="number" step="0.01"></div>
-      <div><label class="field-label">Tilt (°)</label><input class="num-input" id="cfgTilt" type="number" step="1"></div>
-      <div><label class="field-label">Azimuth (°)</label><input class="num-input" id="cfgAzimuth" type="number" step="5"></div>
-      <div><label class="field-label">Forecast Days</label><input class="num-input" id="cfgDays" type="number" step="1" min="1" max="16"></div>
-    </div>
-    <div class="ev-config">
-      <label class="field-label">EV Charging Threshold (kW output)</label>
-      <input class="num-input" id="cfgEvThreshold" type="number" step="0.5" style="max-width:160px">
-    </div>
-    <button class="btn-primary" id="applyBtn" style="width:100%;margin-top:14px;padding:11px">Update Forecast</button>
-    <div class="config-summary" id="configSummary"></div>
-  </div>
-</div>
 
 <div class="footer">
   Data from <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a> · GTI Forecast
-  <div style="margin-top:4px">Pull down to refresh · Auto-refreshes every 30 min</div>
+  <div class="footer-mobile-hint" style="margin-top:4px">Pull down to refresh · Auto-refreshes every 30 min</div>
 </div>
 
 <script>
@@ -401,9 +528,13 @@ function populateFields() {
   $('cfgEvThreshold').value = config.evThreshold;
   $('locationLabel').textContent = (config.locationName || 'Set location below') + ' · ' +
     new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short'});
-  $('sectionTitle').textContent = '7-Day Outlook' + (config.locationName ? ' — ' + config.locationName : '');
+  $('sectionTitle').textContent = config.locationName ? ' — ' + config.locationName : '';
   $('configSummary').textContent = config.locationName ?
     `${config.systemKw}kW · ${config.inverterKw}kW inv · PR ${config.pr} · ${config.tilt}° tilt · ${config.azimuth}° az` : '';
+  // Ring: show when location not yet set
+  const hasLocation = !!(config.lat || config.lon);
+  $('configBtnWrap').classList.toggle('no-ring', hasLocation);
+  markDefaults();
   const pc = $('presetContainer');
   pc.innerHTML = '';
   (config.presets||[]).forEach(p => {
@@ -411,6 +542,17 @@ function populateFields() {
     btn.className = 'btn-secondary'; btn.textContent = p.label;
     btn.onclick = () => { Object.assign(config,p); config.locationName = p.label; saveConfig(); populateFields(); fetchForecast(); };
     pc.appendChild(btn);
+  });
+}
+
+function markDefaults() {
+  [['cfgSystem','systemKw'],['cfgInverter','inverterKw'],['cfgPR','pr'],
+   ['cfgTilt','tilt'],['cfgAzimuth','azimuth'],['cfgDays','forecastDays'],
+   ['cfgEvThreshold','evThreshold']].forEach(([id, key]) => {
+    const el = $(id);
+    const isDefault = parseFloat(el.value) === DEFAULTS[key];
+    el.classList.toggle('is-default', isDefault);
+    el.title = isDefault ? 'Default value' : '';
   });
 }
 
@@ -449,6 +591,7 @@ function showSetup() {
   populateFields();
   $('configPanel').classList.remove('hidden');
   $('configToggle').textContent = 'Hide Settings ↑';
+  $('configBtnWrap').classList.remove('no-ring');
   $('locationLabel').textContent = 'Welcome — set your location to get started';
   $('loadingOverlay').classList.add('hidden');
 }
@@ -584,7 +727,10 @@ function renderSelectedDay() {
   const day = allDays[selectedDayIdx];
   if (!day) return;
   const evColour = day.evHours > 2 ? 'green' : day.evHours >= 1 ? 'amber' : 'red';
+  const evCaption = { green: 'kWh ▲ great day', amber: 'kWh · fair day', red: 'kWh ▼ low yield' };
   $('dailyKwh').className = 'stat-value ' + evColour;
+  $('dailyCaption').className = 'stat-unit ' + evColour;
+  $('dailyCaption').textContent = evCaption[evColour];
   $('dailyKwh').textContent = day.totalKwh.toFixed(1);
   $('peakKw').textContent = day.peakKw.toFixed(1);
 
@@ -594,9 +740,9 @@ function renderSelectedDay() {
   const nowH = now.getHours() + now.getMinutes()/60;
   if (isToday) {
     const c = day.rows.reduce((b,r) => Math.abs(r.hour-nowH)<Math.abs(b.hour-nowH)?r:b, day.rows[0]);
-    if (c && Math.abs(c.hour-nowH)<0.6) { $('nowKw').textContent=c.kw.toFixed(1); $('nowUnit').textContent='kW'; }
-    else { $('nowKw').textContent='—'; $('nowUnit').textContent=''; }
-  } else { $('nowKw').textContent='—'; $('nowUnit').textContent=''; }
+    if (c && Math.abs(c.hour-nowH)<0.6) { $('nowKw').textContent=c.kw.toFixed(1); $('nowUnit').className='stat-unit gold'; $('nowUnit').textContent='kW'; }
+    else { $('nowKw').textContent='—'; $('nowUnit').className='stat-unit'; $('nowUnit').textContent=''; }
+  } else { $('nowKw').textContent='—'; $('nowUnit').className='stat-unit'; $('nowUnit').textContent=''; }
 
   $('sunriseTime').textContent = day.sunriseStr;
   $('sunsetTime').textContent = day.sunsetStr;
@@ -636,13 +782,20 @@ function renderChart(day, isToday, nowH) {
   );
 
   const grad = ctx.createLinearGradient(0,0,0,260);
-  grad.addColorStop(0,'rgba(245,166,35,0.22)');
-  grad.addColorStop(0.5,'rgba(245,166,35,0.06)');
-  grad.addColorStop(1,'rgba(245,166,35,0)');
+  grad.addColorStop(0,'rgba(232,149,14,0.22)');
+  grad.addColorStop(0.5,'rgba(232,149,14,0.06)');
+  grad.addColorStop(1,'rgba(232,149,14,0)');
 
-  const evGrad = ctx.createLinearGradient(0,0,0,260);
-  evGrad.addColorStop(0,'rgba(52,199,89,0.25)');
-  evGrad.addColorStop(1,'rgba(52,199,89,0.03)');
+  // Diagonal hatching pattern for EV window fill
+  const patCanvas = document.createElement('canvas');
+  patCanvas.width = 7; patCanvas.height = 7;
+  const patCtx = patCanvas.getContext('2d');
+  patCtx.fillStyle = 'rgba(52,199,89,0.07)';
+  patCtx.fillRect(0, 0, 7, 7);
+  patCtx.strokeStyle = 'rgba(52,199,89,0.42)';
+  patCtx.lineWidth = 1.5;
+  patCtx.beginPath(); patCtx.moveTo(0,7); patCtx.lineTo(7,0); patCtx.stroke();
+  const evGrad = ctx.createPattern(patCanvas, 'repeat');
 
   const ptBg = rows.map(() => 'transparent');
   const ptR = rows.map(() => 0);
@@ -671,9 +824,9 @@ function renderChart(day, isToday, nowH) {
         },
         {
           label:'kW', data:kwData,
-          borderColor:'#F5A623', borderWidth:2.5, backgroundColor:grad, fill:true, tension:0.35,
+          borderColor:'#E8950E', borderWidth:2.5, backgroundColor:grad, fill:true, tension:0.35,
           pointBackgroundColor:ptBg, pointBorderColor:ptBorder, pointBorderWidth:2, pointRadius:ptR,
-          pointHoverRadius:5, pointHoverBackgroundColor:'#F5A623',
+          pointHoverRadius:5, pointHoverBackgroundColor:'#E8950E',
           yAxisID:'y', order:1
         }
       ]
@@ -745,7 +898,7 @@ function renderChart(day, isToday, nowH) {
           ctx.font='500 9px IBM Plex Mono';
           ctx.fillText(lbl,xp+3,y.top+11); ctx.restore();
         };
-        if(day.sunriseH) draw(fmtTime(day.sunriseH),'#F5A623','☀ Rise');
+        if(day.sunriseH) draw(fmtTime(day.sunriseH),'#E8950E','☀ Rise');
         if(day.sunsetH) draw(fmtTime(day.sunsetH),'#4A9EE8','☾ Set');
       }
     },
@@ -768,14 +921,14 @@ function renderChart(day, isToday, nowH) {
         // Dotted crosshair lines
         ctx.setLineDash([2, 4]);
         ctx.lineWidth = 1;
-        ctx.strokeStyle = 'rgba(245,166,35,0.55)';
+        ctx.strokeStyle = 'rgba(232,149,14,0.55)';
         ctx.beginPath(); ctx.moveTo(xPos, yPos); ctx.lineTo(xPos, y.bottom); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(xPos, yPos); ctx.lineTo(x.left, yPos); ctx.stroke();
         // Single orange dot
         ctx.setLineDash([]);
         ctx.beginPath();
         ctx.arc(xPos, yPos, 5, 0, Math.PI * 2);
-        ctx.fillStyle = '#F5A623';
+        ctx.fillStyle = '#E8950E';
         ctx.fill();
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 2;
@@ -864,6 +1017,23 @@ $('configToggle').addEventListener('click',()=>{
 });
 $('searchBtn').addEventListener('click', geocode);
 $('applyBtn').addEventListener('click',()=>{ readFields(); saveConfig(); populateFields(); fetchForecast(); });
+
+// Field hints — tap i to toggle inline explanation
+document.querySelectorAll('.hint-icon').forEach(icon => {
+  icon.title = icon.dataset.hint;
+  icon.addEventListener('click', e => {
+    e.stopPropagation();
+    const wrap = icon.closest('div');
+    let hint = wrap.querySelector('.hint-text');
+    if (!hint) {
+      hint = document.createElement('div');
+      hint.className = 'hint-text';
+      hint.textContent = icon.dataset.hint;
+      wrap.insertBefore(hint, wrap.querySelector('input'));
+    }
+    hint.classList.toggle('hint-visible');
+  });
+});
 
 // Pull-to-refresh
 let ts=0;

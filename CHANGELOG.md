@@ -4,6 +4,37 @@ Versioning: `1.0.x` bug fix · `1.x.0` new feature · `x.0.0` breaking change
 
 ---
 
+## [1.2.0] — 2026-03-28
+
+### Added
+- Desktop two-column layout at ≥900px: sticky left panel with vertical 7-day card list and always-visible config panel; right column with stats, chart, and EV card
+- Chart canvas height increased to 320px on desktop
+- Attribution and auto-refresh notice pinned to the bottom of the desktop sidebar
+- Animated amber ring on the Configure System button (mobile only) when no location is set — rotates anti-clockwise as a setup prompt, disappears once location is configured
+- Default value indicators on config inputs: faint dashed amber underline on any field still at its factory default; `title` tooltip reads "Default value" on hover
+- Inline field hints: tapping the `i` icon next to Array, Inverter, Perf. Ratio, Tilt, Azimuth, and EV Threshold reveals a one-line explanation; hover shows a native tooltip on desktop
+- Space Grotesk added as the font for stat card values
+- EV charge window now shown with diagonal green hatching fill on the chart for clearer visual separation
+- Estimated stat card caption line now includes yield quality indicator: `kWh ▲ great day`, `kWh · fair day`, or `kWh ▼ low yield`
+- Stat card unit labels (kW) for Peak and Now now coloured to match their value, consistent with the Estimated card
+
+### Changed
+- Amber accent colour deepened from `#F5A623` to `#E8950E` for improved contrast on white (applies to both mobile and desktop)
+- Surface whites warmed from `#FFFFFF` to `#FEFCF8` for visual consistency with the app background
+- Cloud grey shifted from `#B0BEC5` to `#90A4AE` to align CSS variable with the chart's existing cloud colour
+- Config panel repositioned above the chart on mobile, reducing scroll distance to reach settings
+- Mini bar chart hidden on desktop (redundant with the vertical card list)
+- Location name shown in header subtitle on desktop; hidden from section title to avoid duplication
+- Day card kWh badges softened: muted fill backgrounds, weight 500, desaturated text colours (Option C)
+- Stat card values switched to Space Grotesk at 19px/500 weight for a cleaner, less technical feel
+- Red EV badge and stat colours made slightly more saturated (`#BE3D28`) for legibility
+- Chart legend label updated from "Output" to "PV Output"
+
+### Fixed
+- *(nothing)*
+
+---
+
 ## [1.1.0] — 2026-03-25
 
 ### Added
