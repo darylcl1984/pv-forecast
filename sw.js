@@ -1,4 +1,5 @@
-const CACHE_NAME = 'solar-forecast-v2';
+// v3 — 2026-03-30
+const CACHE_NAME = 'solar-forecast-v3';
 
 // CDN assets only — versioned/immutable, safe to cache-first indefinitely
 const CDN_ASSETS = [

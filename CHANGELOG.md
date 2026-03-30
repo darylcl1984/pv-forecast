@@ -4,6 +4,29 @@ Versioning: `1.0.x` bug fix · `1.x.0` new feature · `x.0.0` breaking change
 
 ---
 
+## [1.3.0] — 2026-03-30
+
+### Added
+- Desktop collapsible config panel: defaults to a compact summary card (location name + param summary + Edit button) when settings are already configured; clicking expands to full config; ↑ Collapse button returns to summary; auto-collapses after Update Forecast
+- Gear/sliders icon in header replaces the full-width "Configure System" button on mobile — cleaner header with right-aligned control
+- Animated ring moved to the header gear icon wrapper (same anti-clockwise ring when no location is set)
+- Location name and date shown inline next to "7-Day Outlook" section title on mobile
+- Combined info strip: weather description and sunrise/sunset on a single row (was two separate rows)
+- MIT LICENSE file added to repository root
+
+### Changed
+- Default system parameters updated: array 10 kW, inverter 8 kW, tilt 22.5°
+- Mobile layout reordered using CSS `order`: chart floats to top, followed by info strip, stats, EV card, then config panel
+- Config panel repositioned above the chart on mobile, reducing scroll distance to reach settings
+- Mobile spacing normalised and reduced throughout for a less cluttered feel
+- Service worker updated to v3 with `updateViaCache: 'none'` to ensure the latest SW is always fetched on navigation
+
+### Removed
+- Mini bar chart (below 7-day outlook) removed — redundant with day card kWh values
+- Full-width "Configure System" button removed — replaced by the header gear icon
+
+---
+
 ## [1.2.0] — 2026-03-28
 
 ### Added
