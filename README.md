@@ -4,6 +4,10 @@ A responsive progressive web app that estimates photovoltaic output using [Open-
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 
+| Desktop | Mobile |
+|---------|--------|
+| ![Desktop view](docs/pv-forecast-desktop.png) | ![Mobile view](docs/pv-forecast-mobile.png) |
+
 ## Why This Exists
 
 Most solar forecast tools are either locked behind inverter vendor apps, require paid subscriptions, or don't let you configure your actual system parameters. This app gives you a 7-day PV output forecast based on your real array size, inverter capacity, tilt, azimuth, and performance ratio — all running client-side with free API data.
