@@ -14,10 +14,10 @@ import glob
 import sys
 
 # ── System constants (edit to match your setup) ──
-PV_KW      = 6.6    # Total panel capacity in kW
-INVERTER_KW = 5.0   # Inverter output limit in kW
+PV_KW      = 10.0   # Total panel capacity in kW
+INVERTER_KW = 8.0   # Inverter output limit in kW
 ASSUMED_PR = 0.80   # Starting performance ratio (typical range: 0.75–0.85)
-TILT       = 25     # Panel tilt in degrees
+TILT       = 22.5   # Panel tilt in degrees
 AZIMUTH    = 180    # Panel azimuth (Open-Meteo convention: 0=south, 180=north)
 LAT        = 0.0    # Your latitude  — replace before running
 LON        = 0.0    # Your longitude — replace before running

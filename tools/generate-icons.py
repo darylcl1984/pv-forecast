@@ -81,7 +81,7 @@ def make_icon_png(size):
 
 
 if __name__ == '__main__':
-    out_dir = os.path.join(os.path.dirname(__file__), 'icons')
+    out_dir = os.path.join(os.path.dirname(__file__), '..', 'icons')
     os.makedirs(out_dir, exist_ok=True)
     for size in [48, 72, 96, 144, 192, 512]:
         data = make_icon_png(size)
