@@ -8,24 +8,19 @@ A responsive progressive web app that estimates photovoltaic output using [Open-
 |---------|--------|
 | ![Desktop view](docs/pv-forecast-desktop.png) | ![Mobile view](docs/pv-forecast-mobile.png) |
 
+**Live:** [darylcl1984.github.io/pv-forecast](https://darylcl1984.github.io/pv-forecast/)
+
 ## Why This Exists
 
 Most solar forecast tools are either locked behind inverter vendor apps, require paid subscriptions, or don't let you configure your actual system parameters. This app gives you a 7-day PV output forecast based on your real array size, inverter capacity, tilt, azimuth, and performance ratio — all running client-side with free API data.
 
 ## Features
 
-- **Responsive layout** — two-column desktop view (≥900px) with sticky sidebar; full mobile experience with pull-to-refresh
-- **7-day forecast cards** — colour-coded kWh badges (green/amber/red) indicating EV charge window quality, with weather icon and temperature range
-- **Hourly PV output chart** — solar curve, cloud cover overlay, diagonal-hatched EV charge window, inverter clipping line, and sunrise/sunset markers
-- **Live "Now" indicator** — interpolated dot on today's chart showing current estimated output
-- **EV charge window detection** — longest consecutive block above your kW threshold, with quality rating (great / fair / low yield)
-- **Configurable system parameters** — array size, inverter limit, performance ratio, tilt, azimuth; each field has an inline hint explaining the parameter
-- **Default value indicators** — config fields still at factory defaults are visually flagged so you know what to personalise
-- **Setup prompt** — animated ring on the Configure button (mobile) when no location is set
-- **Location search** with typeahead autocomplete via Open-Meteo geocoding, plus browser geolocation on first launch
-- **PWA installable** — Add to Home Screen on Android Chrome and iOS Safari; opens as a standalone app
-- **Offline support** — 6hr localStorage cache; service worker serves the app shell when offline
-- **Auto-refresh** every 30 minutes; pull-to-refresh on mobile
+- **Configurable system parameters** — array size, inverter limit, performance ratio, tilt, and azimuth; inline hints explain each field
+- **7-day forecast** — colour-coded daily cards with kWh output, weather, and temperature; tap any day for an hourly PV chart with cloud cover overlay and sunrise/sunset markers
+- **EV charge window detection** — finds the longest consecutive block above your charger's kW threshold and rates it great / fair / low yield
+- **PWA installable** — Add to Home Screen on Android and iOS; service worker keeps the app available offline with a 6hr data cache
+- **No backend** — single HTML file, no API key, no account required; deployable to any static host or GitHub Pages
 
 ## How It Works
 
@@ -59,10 +54,10 @@ Your app will be live at `https://<username>.github.io/<repo-name>/`
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| Array (kW) | 7 | Total panel capacity |
-| Inverter (kW) | 5 | Inverter output limit |
+| Array (kW) | 10 | Total panel capacity |
+| Inverter (kW) | 8 | Inverter output limit |
 | Performance Ratio | 0.80 | System efficiency factor (typically 0.75–0.85) |
-| Tilt (°) | 25 | Panel tilt from horizontal |
+| Tilt (°) | 22.5 | Panel tilt from horizontal |
 | Azimuth (°) | 180 | Panel direction — Open-Meteo convention: 0°=south, 180°=north |
 | Forecast Days | 7 | 1–16 days ahead |
 | EV Threshold (kW) | 4 | Minimum output for EV charge window detection |
@@ -71,11 +66,11 @@ Your app will be live at `https://<username>.github.io/<repo-name>/`
 
 ## Calibration
 
-The repo includes `calibrate_pr.py`, a standalone Python script for calibrating your performance ratio against real inverter data. It reads Sungrow CSV exports and fetches matching GTI data from Open-Meteo to back-calculate your actual PR.
+The repo includes `tools/calibrate_pr.py`, a standalone Python script for calibrating your performance ratio against real inverter data. It reads Sungrow CSV exports and fetches matching GTI data from Open-Meteo to back-calculate your actual PR. **Don't commit your CSV exports** — they contain real production data; they're blocked by `.gitignore` by default.
 
 ```bash
-# Place your Sungrow 5-minute CSV exports in the same directory
-python calibrate_pr.py
+# Place your Sungrow 5-minute CSV exports in tools/
+python tools/calibrate_pr.py
 ```
 
 The script produces per-day and overall PR statistics, identifies clipped hours, and recommends whether your current PR setting needs adjustment.
