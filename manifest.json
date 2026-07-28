@@ -1,6 +1,6 @@
 {
-  "name": "Solar Forecast",
-  "short_name": "Solar",
+  "name": "PV Forecast",
+  "short_name": "PV Forecast",
   "description": "PV output forecast using Open-Meteo GTI data",
   "display": "standalone",
   "orientation": "portrait-primary",
