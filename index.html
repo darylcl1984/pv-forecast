@@ -16,23 +16,29 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
     --sun: #E8950E; --sun-light: #FFF3D6; --sun-mid: #FCCF5A;
+    --sun-glow: rgba(232,149,14,0.12);
     --sky: #4A9EE8; --sky-light: #E8F4FD;
     --cloud: #90A4AE; --cloud-light: #ECEFF1;
     --ev: #34C759; --ev-light: #E5F9EB;
     --bg: #F8F7F4; --surface: #FEFCF8; --surface-alt: #F2F1EE;
-    --text: #1D1D1F; --text-2: #6E6E73; --text-3: #AEAEB2;
+    --text: #1D1D1F; --text-2: #6E6E73; --text-3: #8E8E93;
+    --limit: #B87200; --limit-band: rgba(184,114,0,0.08);
     --border: rgba(0,0,0,0.06); --border-strong: rgba(0,0,0,0.1);
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
     --shadow-md: 0 4px 12px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
     --radius: 14px; --radius-sm: 10px; --radius-xs: 8px;
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px;
     --font: 'Outfit', -apple-system, sans-serif;
     --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --display: 'Space Grotesk', var(--font);
+    --bg-glow: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(232,149,14,0.09), transparent 55%);
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
   html { background: var(--bg); }
   body {
-    font-family: var(--font); color: var(--text); background: var(--bg);
+    font-family: var(--font); color: var(--text);
+    background: var(--bg-glow), var(--bg);
     min-height: 100vh; min-height: 100dvh;
     -webkit-font-smoothing: antialiased;
     padding-top: var(--safe-top); padding-bottom: calc(var(--safe-bottom) + 20px);
@@ -40,7 +46,7 @@
   }
   .header {
     display: flex; align-items: center; gap: 10px;
-    padding: 10px 16px; text-align: left;
+    padding: 10px var(--space-4); text-align: left;
     border-bottom: 1px solid var(--border);
     position: sticky; top: 0; z-index: 100;
     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
@@ -48,139 +54,227 @@
   }
   .header-icon {
     width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
-    background: linear-gradient(135deg, var(--sun), #F7C948);
+    background: linear-gradient(145deg, #FFF8E8, var(--sun-light));
     display: inline-flex; align-items: center; justify-content: center;
-    box-shadow: 0 2px 8px rgba(245,166,35,0.3);
+    box-shadow: var(--shadow-sm);
   }
-  .header h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.03em; }
-  .header-sub { display: none; font-size: 12px; color: var(--text-3); margin-top: 2px; font-family: var(--mono); }
+  .header-icon svg circle { fill: var(--sun); opacity: 1; }
+  .header-icon svg path { stroke: var(--sun); }
+  .header h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.035em; }
+  .header-sub { display: none; font-size: 12px; color: var(--text-2); margin-top: 2px; font-family: var(--mono); }
 
-  .weekly-section { padding: 10px 12px 0; }
+  .weekly-section { padding: var(--space-3) var(--space-3) 0; }
   .section-title-row {
     display: flex; align-items: baseline; justify-content: space-between;
-    margin-bottom: 8px; padding: 0 2px;
+    margin-bottom: var(--space-2); padding: 0 2px;
   }
   .section-title {
     font-size: 11px; font-weight: 600; text-transform: uppercase;
     letter-spacing: 0.06em; color: var(--text-3); white-space: nowrap;
   }
   .section-location {
-    font-size: 10px; color: var(--text-3); font-family: var(--mono);
+    font-size: 10px; color: var(--text-2); font-family: var(--mono);
     text-align: right; white-space: nowrap; overflow: hidden;
-    text-overflow: ellipsis; max-width: 62%; margin-left: 8px;
+    text-overflow: ellipsis; max-width: 62%; margin-left: var(--space-2);
   }
   .weekly-scroll {
-    display: flex; gap: 8px; overflow-x: auto;
-    scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 4px;
+    display: flex; gap: var(--space-2); overflow-x: auto;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: var(--space-1);
   }
   .weekly-scroll::-webkit-scrollbar { display: none; }
   .day-card {
-    flex: 0 0 auto; min-width: 68px; padding: 7px 8px 5px;
-    background: var(--surface); border-radius: var(--radius-sm);
-    border: 1.5px solid var(--border); text-align: center;
-    cursor: pointer; transition: all 0.2s ease;
+    flex: 0 0 auto; min-width: 72px; padding: 8px 10px 6px;
+    background: transparent; border-radius: var(--radius-sm);
+    border: none; text-align: center;
+    cursor: pointer; transition: background 0.2s ease, box-shadow 0.2s ease;
     user-select: none; -webkit-user-select: none;
   }
-  .day-card.active { border-color: var(--sun); background: var(--sun-light); box-shadow: 0 0 0 3px rgba(245,166,35,0.1); }
+  .day-card.active {
+    background: var(--sun-light);
+    box-shadow: inset 3px 0 0 var(--sun);
+  }
   .day-card .day-name { font-size: 10px; font-weight: 500; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; }
   .day-card .day-date { font-size: 13px; font-weight: 600; color: var(--text); margin: 2px 0; }
-  .day-card .day-kwh { font-size: 15px; font-weight: 700; color: var(--sun); font-family: var(--mono); }
-  .day-card .day-unit { font-size: 9px; color: var(--text-3); }
-  .day-card .day-cloud { font-size: 10px; color: var(--cloud); margin-top: 2px; }
+  .day-card .day-cloud { font-size: 10px; color: var(--text-2); margin-top: 2px; }
+  .day-card .spark { display: block; margin: 3px auto 2px; }
   .kwh-badge {
     display: inline-flex; align-items: baseline; gap: 2px;
-    padding: 2px 7px; border-radius: 20px; margin: 2px 0;
+    padding: 0; border-radius: 0; margin: 2px 0; background: none;
   }
   .kwh-badge .kval { font-size: 15px; font-weight: 500; font-family: var(--mono); }
-  .kwh-badge .kunit { font-size: 9px; font-weight: 400; }
-  .kwh-badge.ev-good  { background: #F0FAF4; color: #3D8B5E; }
-  .kwh-badge.ev-part  { background: #FDF6EC; color: #B87200; }
-  .kwh-badge.ev-none  { background: #FBEAE8; color: #BE3D28; }
+  .kwh-badge .kunit { font-size: 9px; font-weight: 400; color: var(--text-3); }
+  .kwh-badge.ev-good  { color: #3D8B5E; background: none; }
+  .kwh-badge.ev-part  { color: #B87200; background: none; }
+  .kwh-badge.ev-none  { color: #BE3D28; background: none; }
 
-  .week-bar-wrap { display: none; }
-  .week-bars {
-    display: flex; gap: 3px; align-items: flex-end; height: 44px; padding: 4px 4px 0;
-    background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--border);
+  .stats-wrap {
+    padding: var(--space-2) var(--space-3) 0; width: 100%;
   }
-  .week-bar {
-    flex: 1; border-radius: 4px 4px 0 0; min-height: 3px;
-    background: var(--sun-light); transition: all 0.3s ease;
-  }
-  .week-bar.active { background: var(--sun); }
-  .week-bar.cloudy { background: var(--cloud-light); }
-  .week-bar.cloudy.active { background: var(--cloud); }
-
   .stats {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
-    padding: 8px 12px 0; max-width: 560px; margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 2.2fr);
+    gap: 0; align-items: stretch;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); box-shadow: var(--shadow-sm);
+    padding: 10px 12px;
   }
-  .stat-card {
-    background: var(--surface); border-radius: var(--radius-sm);
-    border: 1px solid var(--border); padding: 10px 8px; text-align: center;
-    box-shadow: var(--shadow-sm);
+  .stat-energy {
+    min-width: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    border-right: 1px solid var(--border);
+    padding: 0 10px 0 0;
+    margin-right: 10px;
   }
-  .stat-label { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); margin-bottom: 4px; }
-  .stat-value { font-size: 19px; font-weight: 500; font-family: 'Space Grotesk', var(--font); letter-spacing: -0.01em; line-height: 1; }
-  .stat-unit { font-size: 10px; color: var(--text-3); margin-top: 2px; }
-  .stat-value.gold,  .stat-unit.gold  { color: var(--sun); }
-  .stat-value.blue,  .stat-unit.blue  { color: var(--sky); }
-  .stat-value.green, .stat-unit.green { color: #3D8B5E; }
-  .stat-value.amber, .stat-unit.amber { color: #B87200; }
-  .stat-value.red,   .stat-unit.red   { color: #BE3D28; }
+  .stat-energy .stat-line { justify-content: center; }
+  .stat-energy .stat-value { font-size: 24px; }
+  .stat-meter { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .stat-label {
+    font-size: 10px; font-weight: 500; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--text-3);
+  }
+  .stat-line {
+    display: flex; align-items: baseline; gap: 4px; min-width: 0;
+  }
+  .stat-value {
+    font-size: 22px; font-weight: 500; font-family: var(--display);
+    letter-spacing: -0.02em; line-height: 1.1;
+    color: var(--sun); white-space: nowrap;
+  }
+  .stat-unit {
+    font-size: 10px; font-weight: 400; color: rgba(232,149,14,0.7);
+    font-family: var(--font); line-height: 1;
+  }
+  .stat-context {
+    font-size: 10px; font-family: var(--mono); color: var(--text-2);
+    letter-spacing: 0.01em; line-height: 1.3; margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .stat-context.up { color: #3D8B5E; }
+  .stat-context.down { color: #BE3D28; }
+
+  /* Meter: NOW left, PEAK centred on tick; time under tick */
+  .meter-body {
+    display: block; position: relative;
+    padding-top: 40px;
+  }
+  .meter-labels { display: contents; }
+  .meter-now-label {
+    position: absolute; left: 0; top: 0; z-index: 3;
+    text-align: left; min-width: 0;
+  }
+  .meter-peak-label {
+    position: absolute; top: 0; z-index: 2;
+    text-align: center; transform: translateX(-50%);
+    pointer-events: none; white-space: nowrap; min-width: 0;
+  }
+  .meter-now-label .stat-value,
+  .meter-peak-label .stat-value { font-size: 15px; }
+  .meter-peak-label .stat-value { color: var(--text); }
+  .meter-peak-label .stat-unit { color: var(--text-3); }
+  .meter-peak-label .stat-line { justify-content: center; }
+  .meter-now-label.is-night .stat-value,
+  .meter-now-label.is-night .stat-unit { color: var(--text-3); }
+  .meter-peak-label.tick-only .stat-label,
+  .meter-peak-label.tick-only .stat-line { display: none; }
+  .meter-track-wrap { position: relative; }
+  .meter-track {
+    position: relative; width: 100%; height: 8px; border-radius: 20px;
+    background: var(--surface-alt); overflow: visible;
+  }
+  .meter-fill {
+    height: 100%; width: 0%; border-radius: 20px;
+    background: var(--sun); transition: width 0.3s ease;
+  }
+  .meter-track.is-night .meter-fill { background: var(--cloud); }
+  .meter-tick {
+    position: absolute; top: -3px; bottom: -3px; width: 2px;
+    background: var(--text-2); border-radius: 1px;
+    transform: translateX(-50%); z-index: 2;
+  }
+  .meter-tick.hidden { display: none; }
+  .meter-under {
+    position: relative; margin-top: 4px; min-height: 14px;
+  }
+  .meter-peak-time {
+    position: absolute; left: 0; top: 0;
+    transform: translateX(-50%);
+    font-family: var(--mono); font-size: 10px; color: var(--text-2);
+    line-height: 14px; white-space: nowrap; pointer-events: none; z-index: 2;
+  }
+  .meter-peak-time.hidden { display: none; }
+  .stat-context { display: none; }
 
   .info-strip {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 6px 12px; font-size: 12px;
+    padding: var(--space-2) var(--space-3); font-size: 12px;
   }
   .info-weather { display: flex; align-items: center; gap: 6px; }
   .weather-emoji { font-size: 18px; line-height: 1; }
   .weather-desc { color: var(--text-2); font-weight: 500; font-size: 12px; }
   .weather-temps { font-family: var(--mono); font-size: 11px; color: var(--text-3); }
-  .info-sun { display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 11px; color: var(--text-3); }
+  .info-sun { display: flex; align-items: center; gap: var(--space-3); font-family: var(--mono); font-size: 11px; color: var(--text-3); }
   .info-sun span { display: flex; align-items: center; gap: 4px; }
 
-  /* Mobile: flex column so chart floats to top via order */
+  /* Mobile: stats summary above chart (same hierarchy as desktop) */
   .right-col { display: flex; flex-direction: column; }
-  .chart-section { order: 1; padding: 8px 8px 0; max-width: 580px; margin: 0 auto; width: 100%; }
+  .stats-wrap   { order: 1; }
   .info-strip   { order: 2; }
-  .stats        { order: 3; }
-  .ev-strip     { order: 4; }
-  .config-btn-wrap { order: 5; }
-  .config-panel { order: 6; }
+  .chart-section { order: 3; padding: var(--space-2) var(--space-2) 0; margin: 0 auto; width: 100%; }
+  .config-panel { order: 4; }
   .chart-container {
-    background: var(--surface); border-radius: var(--radius);
-    border: 1px solid var(--border); padding: 12px 8px 4px 0;
-    box-shadow: var(--shadow-sm); position: relative;
+    background: transparent; border-radius: var(--radius);
+    border: none;
+    padding: var(--space-2) 0 0;
+    box-shadow: none; position: relative;
   }
   .chart-canvas-wrap { position: relative; height: 260px; width: 100%; }
-  .chart-legend { display: flex; justify-content: center; gap: 16px; padding: 6px 0 2px; font-size: 10px; color: var(--text-3); }
-  .chart-legend span { display: flex; align-items: center; gap: 4px; }
+  .chart-legend {
+    display: grid; grid-template-columns: auto 1fr auto;
+    align-items: center; gap: 4px 6px;
+    padding: 6px 0 8px; font-size: 10px; color: var(--text-3);
+    border-bottom: 1px solid var(--border);
+  }
+  .chart-legend-axis {
+    font-family: var(--mono); font-size: 9px; font-weight: 500;
+    letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-3);
+    white-space: nowrap; min-width: 0;
+  }
+  .chart-legend-items {
+    display: flex; justify-content: center; flex-wrap: wrap;
+    gap: 6px 10px; min-width: 0;
+  }
+  .chart-legend-items span { display: flex; align-items: center; gap: 4px; }
   .legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 
   .spinner-overlay {
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    background: rgba(255,255,255,0.8); border-radius: var(--radius); z-index: 10;
+    background: rgba(254,252,248,0.8); border-radius: var(--radius); z-index: 10;
     backdrop-filter: blur(4px);
   }
   .spinner { width: 28px; height: 28px; border: 2.5px solid var(--border-strong); border-top-color: var(--sun); border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg) } }
 
-  .ev-strip { max-width: 556px; margin: 6px auto 0; padding: 0 8px; }
+  .ev-strip {
+    margin: 0; padding: 0;
+    width: 100%; box-sizing: border-box;
+  }
   .ev-card {
-    background: var(--ev-light); border: 1px solid rgba(52,199,89,0.2);
-    border-radius: var(--radius-sm); padding: 10px 14px;
+    background: var(--ev-light); border: none;
+    border-left: 3px solid var(--ev);
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    padding: 12px 14px;
     display: flex; align-items: center; gap: 10px; font-size: 12px; color: #1B7A34;
+    width: 100%; box-sizing: border-box;
   }
   .ev-card .ev-icon { font-size: 18px; }
   .ev-card .ev-label { font-weight: 500; }
   .ev-card .ev-detail { font-family: var(--mono); font-size: 11px; opacity: 0.8; }
-  .ev-card.part-window { background: var(--sun-light); border-color: rgba(245,166,35,0.3); color: #B87200; }
-  .ev-card.no-window   { background: #FEECEC; border-color: rgba(192,57,43,0.2); color: #C0392B; }
+  .ev-card.part-window { background: var(--sun-light); border-left-color: var(--sun); color: #B87200; }
+  .ev-card.no-window   { background: #FEECEC; border-left-color: #C0392B; color: #C0392B; }
 
   @keyframes ring-ccw { to { transform: rotate(-360deg); } }
-  /* Old full-width config button — hidden, gear icon replaces it */
-  .config-btn-wrap { display: none; }
-  .config-toggle { display: none; }
   /* Gear icon in header */
   .header-gear-wrap {
     position: relative; margin-left: auto; flex-shrink: 0;
@@ -204,7 +298,7 @@
   }
   .header-gear.active { background: var(--sun-light); border-color: rgba(232,149,14,0.4); color: var(--sun); }
   .header-gear:active { transform: scale(0.93); }
-  .config-panel { max-width: 500px; margin: 12px auto 0; padding: 0 16px; animation: slideDown 0.25s ease; }
+  .config-panel { margin: var(--space-3) auto 0; padding: 0 var(--space-4); animation: slideDown 0.25s ease; }
   @keyframes slideDown { from { opacity: 0; transform: translateY(-6px) } }
   .config-inner {
     background: var(--surface); border-radius: var(--radius);
@@ -234,7 +328,7 @@
     border-radius: var(--radius-xs); padding: 9px 12px; color: var(--text);
     font-size: 14px; font-family: var(--font); outline: none; width: 100%; transition: border-color 0.15s;
   }
-  .text-input:focus, .num-input:focus { border-color: var(--sun); box-shadow: 0 0 0 3px rgba(245,166,35,0.1); }
+  .text-input:focus, .num-input:focus { border-color: var(--sun); box-shadow: 0 0 0 3px var(--sun-glow); }
   .text-input::placeholder { color: var(--text-3); }
   .num-input { font-family: var(--mono); font-size: 13px; }
   .num-input.is-default { border-bottom: 1.5px dashed rgba(232,149,14,0.5); }
@@ -252,9 +346,12 @@
     display: flex; flex-direction: column; gap: 1px;
   }
   .ac-item:last-child { border-bottom: none; }
-  .ac-item:hover, .ac-item:active { background: var(--sun-light); }
+  .ac-item:hover, .ac-item:active, .ac-item.active { background: var(--sun-light); }
   .ac-item .ac-name { font-weight: 500; color: var(--text); }
   .ac-item .ac-detail { font-size: 11px; color: var(--text-3); font-family: var(--mono); }
+  .ac-item.ac-empty { cursor: default; color: var(--text-3); font-size: 12px; }
+  .ac-item.ac-empty:hover { background: transparent; }
+  .places-attrib { font-size: 9px; font-family: var(--mono); color: var(--text-3); margin: -8px 0 12px; }
   .btn-primary {
     background: var(--sun); border: none; border-radius: var(--radius-xs);
     padding: 9px 16px; color: white; font-weight: 600; font-size: 13px;
@@ -267,10 +364,10 @@
     font-size: 11px; font-weight: 500; font-family: var(--font); cursor: pointer;
   }
   .param-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .config-summary { text-align: center; padding: 10px 0 0; font-size: 10px; font-family: var(--mono); color: var(--text-3); }
+  .config-summary { text-align: center; padding: 10px 0 0; font-size: 10px; font-family: var(--mono); color: var(--text-2); }
   .ev-config { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
-  .footer { text-align: center; padding: 20px 16px 0; font-size: 10px; font-family: var(--mono); color: var(--text-3); }
-  .footer a { color: var(--text-3); }
+  .footer { text-align: center; padding: 20px 16px 0; font-size: 10px; font-family: var(--mono); color: var(--text-2); }
+  .footer a { color: var(--text-2); }
   .sidebar-footer { display: none; }
   .offline-badge {
     display: none; position: fixed; top: 8px; right: 8px; z-index: 200;
@@ -309,24 +406,21 @@
     .right-col { display: block; min-width: 0; padding-bottom: 32px; }
 
     /* Vertical day cards */
-    .weekly-section { padding: 16px 12px 0; }
+    .weekly-section { padding: var(--space-4) var(--space-3) 0; }
     .weekly-scroll { flex-direction: column; overflow-x: visible; gap: 6px; }
     .day-card {
-      display: flex; align-items: center; gap: 10px;
+      display: flex; align-items: center; gap: 8px;
       min-width: unset; width: 100%; text-align: left; padding: 9px 12px;
     }
-    .day-card .day-name { width: 28px; margin: 0; }
-    .day-card .day-date { flex: 1; font-size: 12px; margin: 0; }
-    .day-card .day-cloud { margin-top: 0; }
+    .day-card.active { box-shadow: inset 3px 0 0 var(--sun); }
+    .day-card .day-name { width: 28px; margin: 0; flex-shrink: 0; }
+    .day-card .day-date { flex: 1; font-size: 12px; margin: 0; min-width: 0; }
+    .day-card .spark { margin: 0; flex-shrink: 0; }
+    .day-card .day-cloud { margin-top: 0; flex-shrink: 0; }
 
-    /* Hide mini bar chart — cards convey the same info */
-    .week-bar-wrap { display: none; }
-
-    /* Config — hide mobile controls */
-    .config-btn-wrap { display: none; }
-    .config-toggle { display: none; }
-    .header-gear-wrap { display: none; }
-    .config-panel { margin: 8px 0 0; padding: 0 12px; animation: none; }
+    /* Gear available on desktop too — same entry as mobile */
+    .header-gear-wrap { display: block; }
+    .config-panel { margin: var(--space-2) 0 0; padding: 0 var(--space-3); animation: none; }
     .config-panel .config-inner {
       box-shadow: none; border-color: transparent;
       background: transparent; padding: 0;
@@ -341,11 +435,11 @@
       border: 1px solid var(--border); cursor: pointer;
       transition: border-color 0.15s; box-shadow: var(--shadow-sm);
     }
-    .config-summary-card:hover { border-color: rgba(232,149,14,0.4); }
+    .config-summary-card:hover { border-color: var(--border-strong); }
     .config-summary-card.hidden { display: none; }
     .config-summary-top { display: flex; align-items: center; gap: 8px; }
     .config-summary-loc { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .config-summary-params { font-size: 10px; font-family: var(--mono); color: var(--text-3); padding-top: 2px; }
+    .config-summary-params { font-size: 10px; font-family: var(--mono); color: var(--text-2); padding-top: 2px; }
     .config-summary-edit {
       background: none; border: 1px solid var(--border-strong);
       border-radius: 5px; padding: 3px 9px; font-size: 10px;
@@ -366,22 +460,52 @@
     /* Location in section title hidden on desktop — header shows it */
     .section-location { display: none; }
 
-    /* Right col */
-    .stats { max-width: unset; padding: 20px 20px 0; gap: 10px; }
-    .stat-card { padding: 12px; }
-    .info-strip { padding: 8px 16px; }
-    .chart-section { order: unset; max-width: unset; padding: 0 16px; width: auto; }
+    /* Right col — stats align to chart plot (approx. Chart.js axis insets) */
+    .stats-wrap { padding: 12px var(--space-5) 0; }
+    .stats {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
+      gap: 0; align-items: stretch;
+      margin-left: 44px; margin-right: 40px; padding: 12px 14px;
+    }
+    .stat-energy {
+      border-right: 1px solid var(--border);
+      padding: 0 12px 0 0;
+      margin-right: 12px;
+    }
+    /* Slightly larger Estimated so it reads as the hero, top-aligned with NOW/Peak */
+    .stat-energy .stat-value { font-size: 32px; }
+    .stat-energy .stat-unit { font-size: 12px; }
+
+    .meter-body { padding-top: 48px; }
+    .meter-now-label .stat-value,
+    .meter-peak-label .stat-value { font-size: 18px; }
+    .meter-track-wrap { margin-top: 0; }
+    .info-strip { padding: var(--space-2) var(--space-5); }
+    .chart-section { order: unset; padding: 0 var(--space-5); width: auto; }
+    .chart-container {
+      border-bottom: 1px solid var(--border);
+      padding: var(--space-3) var(--space-2) var(--space-1) 0;
+    }
     .chart-canvas-wrap { height: 320px; }
-    .ev-strip { max-width: unset; margin: 10px 0 0; padding: 0 16px; }
+    .chart-legend {
+      display: flex; justify-content: center; gap: var(--space-4);
+      grid-template-columns: none;
+      border-bottom: none;
+      padding: 6px 2px 2px;
+    }
+    .chart-legend-axis { display: none; }
+    .chart-legend-items { display: contents; }
+    .ev-strip { margin: var(--space-3) 0 0; padding: 0; }
+    .ev-card { border-radius: var(--radius-sm); }
 
     /* Footer: hide main footer on desktop, use sidebar-footer instead */
     .footer { display: none; }
     .sidebar-footer {
-      display: block; font-size: 10px; font-family: var(--mono); color: var(--text-3);
+      display: block; font-size: 10px; font-family: var(--mono); color: var(--text-2);
       padding: 12px 12px 16px; border-top: 1px solid var(--border); margin-top: 16px;
       position: sticky; bottom: 0; background: var(--bg);
     }
-    .sidebar-footer a { color: var(--text-3); }
+    .sidebar-footer a { color: var(--text-2); }
   }
 </style>
 </head>
@@ -392,8 +516,8 @@
 <div class="header">
   <div class="header-icon">
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <circle cx="10" cy="10" r="4.5" fill="white" opacity="0.95"/>
-      <path d="M10 1v2.5M10 16.5V19M1 10h2.5M16.5 10H19M3.7 3.7l1.8 1.8M14.5 14.5l1.8 1.8M3.7 16.3l1.8-1.8M14.5 5.5l1.8-1.8" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+      <circle cx="10" cy="10" r="4.5" fill="var(--sun)"/>
+      <path d="M10 1v2.5M10 16.5V19M1 10h2.5M16.5 10H19M3.7 3.7l1.8 1.8M14.5 14.5l1.8 1.8M3.7 16.3l1.8-1.8M14.5 5.5l1.8-1.8" stroke="var(--sun)" stroke-width="1.8" stroke-linecap="round"/>
     </svg>
   </div>
   <h1>Solar Forecast</h1>
@@ -421,10 +545,6 @@
   <div class="weekly-scroll" id="weeklyScroll"></div>
 </div>
 
-<div class="config-btn-wrap no-ring" id="configBtnWrap">
-  <button class="config-toggle" id="configToggle">Configure System ↓</button>
-</div>
-
 <div class="config-summary-card hidden" id="configSummaryCard">
   <div class="config-summary-top">
     <div class="config-summary-loc" id="summaryLoc"></div>
@@ -440,11 +560,12 @@
       <label class="field-label">Location</label>
       <div class="search-row">
         <div class="autocomplete-wrap">
-          <input class="text-input" id="addressInput" placeholder="Enter address or city…" autocomplete="off">
+          <input class="text-input" id="addressInput" placeholder="Street, suburb, or city…" autocomplete="off">
           <div class="autocomplete-list hidden" id="acList"></div>
         </div>
         <button class="btn-primary" id="searchBtn">Search</button>
       </div>
+      <div class="places-attrib">Places © OpenStreetMap / Photon</div>
     </div>
     <div style="margin-bottom:14px">
       <label class="field-label">Quick Presets</label>
@@ -475,21 +596,45 @@
 </div><!-- /left-col -->
 <div class="right-col">
 
-<div class="stats">
-  <div class="stat-card">
-    <div class="stat-label">Estimated</div>
-    <div class="stat-value" id="dailyKwh">—</div>
-    <div class="stat-unit" id="dailyCaption">kWh</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-label">Peak</div>
-    <div class="stat-value gold" id="peakKw">—</div>
-    <div class="stat-unit gold">kW</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-label">Now</div>
-    <div class="stat-value gold" id="nowKw">—</div>
-    <div class="stat-unit" id="nowUnit"></div>
+<div class="stats-wrap">
+  <div class="stats">
+    <div class="stat-energy">
+      <div class="stat-label">Estimated</div>
+      <div class="stat-line">
+        <span class="stat-value" id="dailyKwh">—</span>
+        <span class="stat-unit" id="dailyUnit">kWh</span>
+      </div>
+      <div class="stat-context" id="dailyContext">—</div>
+    </div>
+    <div class="stat-meter" id="statMeter">
+      <div class="meter-body" id="meterBody">
+        <div class="meter-labels">
+          <div class="meter-now-label" id="meterNowLabel">
+            <span class="stat-label">Now</span>
+            <div class="stat-line">
+              <span class="stat-value" id="nowKw">—</span>
+              <span class="stat-unit" id="nowUnit">kW</span>
+            </div>
+          </div>
+          <div class="meter-peak-label" id="meterPeakLabel">
+            <span class="stat-label" id="peakTitle">Peak</span>
+            <div class="stat-line">
+              <span class="stat-value" id="peakKwNum">—</span>
+              <span class="stat-unit" id="peakKwUnit">kW</span>
+            </div>
+          </div>
+        </div>
+        <div class="meter-track-wrap">
+          <div class="meter-track" id="meterTrack">
+            <div class="meter-fill" id="meterFill"></div>
+            <div class="meter-tick" id="meterTick"></div>
+          </div>
+          <div class="meter-under">
+            <div class="meter-peak-time" id="peakContext">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -505,7 +650,7 @@
       <span id="sunriseTime">—</span>
     </span>
     <span>
-      <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="3" fill="var(--sun)" opacity="0.6"/><path d="M7 5v4M1 9h12" stroke="var(--sky)" stroke-width="1.2" stroke-linecap="round"/><path d="M4 7l3 3 3-3" stroke="var(--sky)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 10h10" stroke="var(--sky)" stroke-width="1.3" stroke-linecap="round"/><path d="M3.5 10a3.5 3.5 0 0 1 7 0" stroke="var(--sun)" stroke-width="1.3" stroke-linecap="round" fill="none"/><path d="M7 3.5v1.2M3.2 5.2l.9.9M10.8 5.2l-.9.9" stroke="var(--sun)" stroke-width="1.2" stroke-linecap="round"/></svg>
       <span id="sunsetTime">—</span>
     </span>
   </div>
@@ -519,20 +664,24 @@
       <canvas id="solarChart"></canvas>
     </div>
     <div class="chart-legend">
-      <span><span class="legend-dot" style="background:var(--sun)"></span> PV Output</span>
-      <span><span class="legend-dot" style="background:rgba(144,164,174,0.5)"></span> Cloud %</span>
-      <span><span class="legend-dot" style="background:var(--ev);opacity:0.5"></span> EV Window</span>
-      <span><span class="legend-dot" style="background:transparent;border:1.5px dashed rgba(229,57,53,0.5)"></span> Inv. Limit</span>
+      <span class="chart-legend-axis">kW</span>
+      <div class="chart-legend-items">
+        <span><span class="legend-dot" style="background:var(--sun)"></span> Actual</span>
+        <span><span class="legend-dot" style="background:transparent;border:1.5px dashed var(--sun)"></span> Forecast</span>
+        <span><span class="legend-dot" style="background:rgba(144,164,174,0.55)"></span> Cloud %</span>
+        <span><span class="legend-dot" style="background:var(--ev);opacity:0.5"></span> EV Window</span>
+        <span><span class="legend-dot" style="background:transparent;border:1.5px dashed var(--limit)"></span> Inverter limit</span>
+      </div>
+      <span class="chart-legend-axis">Cloud</span>
     </div>
   </div>
-</div>
-
-<div class="ev-strip">
-  <div class="ev-card" id="evCard">
-    <div class="ev-icon">⚡</div>
-    <div>
-      <div class="ev-label" id="evLabel">Calculating…</div>
-      <div class="ev-detail" id="evDetail"></div>
+  <div class="ev-strip">
+    <div class="ev-card" id="evCard">
+      <div class="ev-icon">⚡</div>
+      <div>
+        <div class="ev-label" id="evLabel">Calculating…</div>
+        <div class="ev-detail" id="evDetail"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -750,7 +899,10 @@ function processData(data) {
   dailyDates.forEach((d,i) => {
     const rows = dayMap[d] || [];
     const totalKwh = rows.reduce((s,r)=>s+r.kw, 0);
-    const peakKw = rows.reduce((m,r)=>Math.max(m,r.kw), 0);
+    let peakKw = 0, peakHour = null;
+    for (const r of rows) {
+      if (r.kw > peakKw) { peakKw = r.kw; peakHour = r.hour; }
+    }
     const avgCloud = rows.length ? rows.reduce((s,r)=>s+r.cloud,0)/rows.length : 0;
     const srH = sunrises[i] ? parseHour(sunrises[i]) : null;
     const ssH = sunsets[i] ? parseHour(sunsets[i]) : null;
@@ -768,7 +920,7 @@ function processData(data) {
     }
     if (curL > evBest) { evBest=curL; evStart=curS; evEnd=curS+curL; }
 
-    allDays.push({ date:d, rows, totalKwh, peakKw, avgCloud, sunriseH:srH, sunsetH:ssH,
+    allDays.push({ date:d, rows, totalKwh, peakKw, peakHour, avgCloud, sunriseH:srH, sunsetH:ssH,
       sunriseStr: srH?fmtTime(srH):'—', sunsetStr: ssH?fmtTime(ssH):'—',
       evStart, evEnd, evHours:evBest,
       tMax: tempMax[i] ?? null, tMin: tempMin[i] ?? null,
@@ -780,6 +932,19 @@ function processData(data) {
   renderSelectedDay();
 }
 
+function sparklineSvg(rows) {
+  const pts = rows.filter(r => r.hour >= 5 && r.hour <= 21);
+  if (pts.length < 2) return '';
+  const w = 40, h = 16;
+  const max = Math.max(...pts.map(r => r.kw), 0.01);
+  const d = pts.map((r, i) => {
+    const x = (i / (pts.length - 1)) * (w - 1);
+    const y = (h - 1) - (r.kw / max) * (h - 2);
+    return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><path d="${d}" fill="none" stroke="var(--text-3)" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/></svg>`;
+}
+
 function renderWeekly() {
   const scroll = $('weeklyScroll');
   scroll.innerHTML = '';
@@ -789,32 +954,125 @@ function renderWeekly() {
     const wi = wmoEmoji(day.wCode);
     const temps = day.tMin !== null ? `${Math.round(day.tMin)}°/${Math.round(day.tMax)}°` : '';
     const evClass = day.evHours > 2 ? 'ev-good' : day.evHours >= 1 ? 'ev-part' : 'ev-none';
-    card.innerHTML = `<div class="day-name">${dayName(day.date)}</div><div class="day-date">${dayDate(day.date)}</div><div class="kwh-badge ${evClass}"><span class="kval">${day.totalKwh.toFixed(0)}</span><span class="kunit">kWh</span></div><div class="day-cloud">${wi} ${temps}</div>`;
+    card.innerHTML = `<div class="day-name">${dayName(day.date)}</div><div class="day-date">${dayDate(day.date)}</div>${sparklineSvg(day.rows)}<div class="kwh-badge ${evClass}"><span class="kval">${day.totalKwh.toFixed(1)}</span><span class="kunit">kWh</span></div><div class="day-cloud">${wi} ${temps}</div>`;
     card.onclick = () => { selectedDayIdx=i; renderWeekly(); renderSelectedDay(); };
     scroll.appendChild(card);
+  });
+}
+
+function renderPowerMeter(day, isToday, nowH) {
+  const limit = config.inverterKw || 1;
+
+  let nowKw = 0;
+  let hasNow = false;
+  if (isToday && day.rows.length) {
+    const c = day.rows.reduce((b,r) => Math.abs(r.hour-nowH)<Math.abs(b.hour-nowH)?r:b, day.rows[0]);
+    if (c && Math.abs(c.hour-nowH) < 0.6) {
+      nowKw = c.kw;
+      hasNow = true;
+    }
+  }
+
+  const isNight = !hasNow || nowKw <= 0.05;
+  const fillKw = isNight ? 0 : nowKw;
+  const fillPct = Math.min(100, Math.max(0, (fillKw / limit) * 100));
+
+  let peakKw = day.peakKw || 0;
+  let peakHour = day.peakHour;
+  let peakTitle = 'Peak';
+  const compactMeter = window.matchMedia('(max-width: 899px)').matches;
+  if (isToday && hasNow && nowKw > peakKw) {
+    peakKw = nowKw;
+    peakHour = nowH;
+    peakTitle = compactMeter ? 'Peak' : 'Peak so far';
+  } else if (isToday && day.peakHour != null && nowH < day.peakHour) {
+    peakTitle = compactMeter ? 'Peak' : 'Forecast peak';
+  }
+
+  const peakPct = Math.min(100, Math.max(0, (peakKw / limit) * 100));
+  const body = $('meterBody');
+  const track = $('meterTrack');
+  const fill = $('meterFill');
+  const tick = $('meterTick');
+  const nowLabel = $('meterNowLabel');
+  const peakLabel = $('meterPeakLabel');
+
+  track.classList.toggle('is-night', isNight);
+  fill.style.width = fillPct + '%';
+  tick.style.left = peakPct + '%';
+  tick.classList.toggle('hidden', peakKw <= 0);
+
+  $('nowKw').textContent = hasNow ? nowKw.toFixed(1) : '—';
+  $('nowUnit').textContent = 'kW';
+  nowLabel.classList.toggle('is-night', isNight || !hasNow);
+
+  $('peakTitle').textContent = peakTitle;
+  $('peakKwNum').textContent = peakKw > 0 ? peakKw.toFixed(1) : '—';
+  $('peakKwUnit').textContent = 'kW';
+
+  const peakTime = $('peakContext');
+  peakTime.textContent = peakHour != null ? fmtTime(peakHour) : '—';
+  peakTime.style.left = peakPct + '%';
+  peakTime.classList.toggle('hidden', peakKw <= 0 || peakHour == null);
+
+  peakLabel.classList.remove('tick-only');
+  peakLabel.style.visibility = peakKw > 0 ? 'visible' : 'hidden';
+
+  // Centre peak label + time on tick (mobile + desktop)
+  peakLabel.style.left = peakPct + '%';
+  peakLabel.style.transform = 'translateX(-50%)';
+  peakTime.style.transform = 'translateX(-50%)';
+
+  const clampTo = (el, container) => {
+    const wrap = container.getBoundingClientRect();
+    let rect = el.getBoundingClientRect();
+    let shift = 0;
+    if (rect.left < wrap.left) shift = wrap.left - rect.left + 2;
+    else if (rect.right > wrap.right) shift = wrap.right - rect.right - 2;
+    el.style.transform = shift
+      ? `translateX(calc(-50% + ${shift}px))`
+      : 'translateX(-50%)';
+    return el.getBoundingClientRect();
+  };
+
+  requestAnimationFrame(() => {
+    if (peakKw <= 0) {
+      peakLabel.style.visibility = 'hidden';
+      return;
+    }
+    const peakRect = clampTo(peakLabel, body);
+    const nowRect = nowLabel.getBoundingClientRect();
+    const overlap = !(peakRect.right < nowRect.left - 4 || peakRect.left > nowRect.right + 4);
+    peakLabel.classList.toggle('tick-only', overlap);
+    if (peakHour != null) clampTo(peakTime, peakTime.parentElement);
   });
 }
 
 function renderSelectedDay() {
   const day = allDays[selectedDayIdx];
   if (!day) return;
-  const evColour = day.evHours > 2 ? 'green' : day.evHours >= 1 ? 'amber' : 'red';
-  const evCaption = { green: 'kWh ▲ great day', amber: 'kWh · fair day', red: 'kWh ▼ low yield' };
-  $('dailyKwh').className = 'stat-value ' + evColour;
-  $('dailyCaption').className = 'stat-unit ' + evColour;
-  $('dailyCaption').textContent = evCaption[evColour];
+
   $('dailyKwh').textContent = day.totalKwh.toFixed(1);
-  $('peakKw').textContent = day.peakKw.toFixed(1);
+  $('dailyUnit').textContent = 'kWh';
+  const weekAvg = allDays.reduce((s, d) => s + d.totalKwh, 0) / allDays.length;
+  const delta = Math.round(day.totalKwh - weekAvg);
+  const dailyCtx = $('dailyContext');
+  dailyCtx.classList.remove('up', 'down');
+  if (delta > 0) {
+    dailyCtx.textContent = `+${delta} vs avg`;
+    dailyCtx.classList.add('up');
+  } else if (delta < 0) {
+    dailyCtx.textContent = `${delta} vs avg`;
+    dailyCtx.classList.add('down');
+  } else {
+    dailyCtx.textContent = 'avg day';
+  }
 
   const now = new Date();
   const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   const isToday = day.date === today;
   const nowH = now.getHours() + now.getMinutes()/60;
-  if (isToday) {
-    const c = day.rows.reduce((b,r) => Math.abs(r.hour-nowH)<Math.abs(b.hour-nowH)?r:b, day.rows[0]);
-    if (c && Math.abs(c.hour-nowH)<0.6) { $('nowKw').textContent=c.kw.toFixed(1); $('nowUnit').className='stat-unit gold'; $('nowUnit').textContent='kW'; }
-    else { $('nowKw').textContent='—'; $('nowUnit').className='stat-unit'; $('nowUnit').textContent=''; }
-  } else { $('nowKw').textContent='—'; $('nowUnit').className='stat-unit'; $('nowUnit').textContent=''; }
+  renderPowerMeter(day, isToday, nowH);
 
   $('sunriseTime').textContent = day.sunriseStr;
   $('sunsetTime').textContent = day.sunsetStr;
@@ -838,27 +1096,51 @@ function renderSelectedDay() {
     $('evLabel').textContent = 'No viable charge window';
     $('evDetail').textContent = `Below ${config.evThreshold}kW threshold all day`;
   }
-  renderChart(day, isToday, nowH);
+  renderChart(day, isToday, nowH, today);
 }
 
-function renderChart(day, isToday, nowH) {
-  const ctx = $('solarChart').getContext('2d');
+function renderChart(day, isToday, nowH, todayStr) {
+  const canvas = $('solarChart');
+  const ctx = canvas.getContext('2d');
+  const isMobileChart = window.matchMedia('(max-width: 899px)').matches;
   const rows = day.rows.filter(r => r.hour>=5 && r.hour<=21);
   const labels = rows.map(r=>r.time);
   const kwData = rows.map(r=>r.kw);
   const cloudData = rows.map(r=>r.cloud);
+  const today = todayStr || (() => {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+  })();
 
-  // EV window: kW values only within the window, null elsewhere (fills under the solar curve)
   const evData = rows.map(r =>
     (day.evStart!==null && r.hour>=day.evStart && r.hour<=day.evEnd) ? r.kw : null
   );
+
+  // Past = solid+fill · Future = dashed, no fill — share splitIdx so lines meet
+  const isPastDay = day.date < today;
+  const isFutureDay = day.date > today;
+  let splitIdx = -1;
+  if (isToday) {
+    for (let i = 0; i < rows.length; i++) {
+      if (rows[i].hour <= nowH) splitIdx = i;
+    }
+  }
+  const pastKw = rows.map((r, i) => {
+    if (isPastDay) return r.kw;
+    if (isFutureDay) return null;
+    return splitIdx >= 0 && i <= splitIdx ? r.kw : null;
+  });
+  const futureKw = rows.map((r, i) => {
+    if (isFutureDay) return r.kw;
+    if (isPastDay) return null;
+    return splitIdx >= 0 && i >= splitIdx ? r.kw : null;
+  });
 
   const grad = ctx.createLinearGradient(0,0,0,260);
   grad.addColorStop(0,'rgba(232,149,14,0.22)');
   grad.addColorStop(0.5,'rgba(232,149,14,0.06)');
   grad.addColorStop(1,'rgba(232,149,14,0)');
 
-  // Diagonal hatching pattern for EV window fill
   const patCanvas = document.createElement('canvas');
   patCanvas.width = 7; patCanvas.height = 7;
   const patCtx = patCanvas.getContext('2d');
@@ -869,13 +1151,18 @@ function renderChart(day, isToday, nowH) {
   patCtx.beginPath(); patCtx.moveTo(0,7); patCtx.lineTo(7,0); patCtx.stroke();
   const evGrad = ctx.createPattern(patCanvas, 'repeat');
 
-  const ptBg = rows.map(() => 'transparent');
-  const ptR = rows.map(() => 0);
-  const ptBorder = rows.map(() => 'transparent');
+  const rawMax = Math.max(config.inverterKw * 1.15, ...(kwData.length ? kwData : [0]));
+  const yMax = Math.max(1, Math.ceil(rawMax));
 
-  const yMax = Math.max(config.inverterKw * 1.15, Math.max(...kwData) * 1.1);
+  if (chart) {
+    try {
+      chart.setActiveElements([]);
+      chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+    } catch (e) {}
+    chart.destroy();
+    chart = null;
+  }
 
-  if (chart) chart.destroy();
   chart = new Chart(ctx, {
     type:'line',
     data: {
@@ -883,33 +1170,44 @@ function renderChart(day, isToday, nowH) {
       datasets: [
         {
           label:'Cloud', data:cloudData,
-          borderColor:'rgba(144,164,174,0.5)', backgroundColor:'rgba(144,164,174,0.1)',
-          borderWidth:1.5, borderDash:[3,3], fill:true, tension:0.3, pointRadius:0,
-          yAxisID:'y1', order:3
+          borderColor:'rgba(144,164,174,0.55)', backgroundColor:'rgba(144,164,174,0.08)',
+          borderWidth:1, borderDash:[4,3], fill:true, tension:0.3, pointRadius:0,
+          yAxisID:'y1', order:4
         },
         {
           label:'EV Window', data:evData,
-          borderColor:'rgba(52,199,89,0.6)', borderWidth:2, borderDash:[4,3],
+          borderColor:'rgba(52,199,89,0.55)', borderWidth:1.5, borderDash:[4,3],
           backgroundColor:evGrad, fill:true, tension:0.35,
           pointRadius:0, spanGaps:false,
-          yAxisID:'y', order:2
+          yAxisID:'y', order:3
         },
         {
-          label:'kW', data:kwData,
-          borderColor:'#E8950E', borderWidth:2.5, backgroundColor:grad, fill:true, tension:0.35,
-          pointBackgroundColor:ptBg, pointBorderColor:ptBorder, pointBorderWidth:2, pointRadius:ptR,
-          pointHoverRadius:5, pointHoverBackgroundColor:'#E8950E',
-          yAxisID:'y', order:1
+          label:'Actual', data:pastKw,
+          borderColor:'#E8950E', borderWidth:2.5, backgroundColor:grad, fill:true, tension:0.25,
+          pointRadius:0, pointHoverRadius:5, pointHoverBackgroundColor:'#E8950E',
+          spanGaps:false, yAxisID:'y', order:1
+        },
+        {
+          label:'Forecast', data:futureKw,
+          borderColor:'#E8950E', borderWidth:2, backgroundColor:'transparent', fill:false,
+          borderDash:[6,4], tension:0.25,
+          pointRadius:0, pointHoverRadius:5, pointHoverBackgroundColor:'#E8950E',
+          spanGaps:false, yAxisID:'y', order:2
         }
       ]
     },
     options: {
       responsive:true, maintainAspectRatio:false,
       interaction:{mode:'index',intersect:false},
+      layout: {
+        padding: isMobileChart
+          ? { left: 0, right: 0, top: 4, bottom: 0 }
+          : { top: 4 }
+      },
       plugins: {
         legend:{display:false},
         tooltip:{
-          backgroundColor:'rgba(255,255,255,0.75)', borderColor:'rgba(0,0,0,0.06)', borderWidth:1,
+          backgroundColor:'rgba(254,252,248,0.92)', borderColor:'rgba(0,0,0,0.06)', borderWidth:1,
           titleColor:'#1D1D1F', titleFont:{family:'Outfit',weight:'600',size:12},
           bodyColor:'#6E6E73', bodyFont:{family:'IBM Plex Mono',size:10},
           padding:{top:6,bottom:6,left:10,right:10}, cornerRadius:8,
@@ -918,21 +1216,59 @@ function renderChart(day, isToday, nowH) {
           yAlign:'top',
           caretSize:4,
           callbacks: {
-            title: items=>items[0].label,
+            title: items => items[0]?.label || '',
             label: item => {
-              if(item.datasetIndex===0) return `☁ ${cloudData[item.dataIndex]}%`;
-              if(item.datasetIndex===1) return null;
-              return `${kwData[item.dataIndex].toFixed(1)}kW · ${rows[item.dataIndex].gti.toFixed(0)}W/m²`;
-            },
-            afterBody: ()=>null
+              if (item.dataset.label === 'Cloud') return `☁ ${cloudData[item.dataIndex]}%`;
+              if (item.dataset.label === 'EV Window') return null;
+              if (item.raw == null) return null;
+              return `${Number(item.raw).toFixed(1)}kW · ${rows[item.dataIndex].gti.toFixed(0)}W/m²`;
+            }
           },
-          filter: item => item.datasetIndex!==1
+          filter: item => item.dataset.label !== 'EV Window' && item.raw != null
         }
       },
       scales: {
-        x: { grid:{color:'rgba(0,0,0,0.03)',drawBorder:false}, ticks:{color:'#AEAEB2',font:{family:'IBM Plex Mono',size:10},maxRotation:0,autoSkip:true,maxTicksLimit:9} },
-        y: { position:'left', grid:{color:'rgba(0,0,0,0.03)',drawBorder:false}, ticks:{color:'#AEAEB2',font:{family:'IBM Plex Mono',size:10}}, beginAtZero:true, max:yMax, title:{display:true,text:'kW',color:'#AEAEB2',font:{family:'IBM Plex Mono',size:10}} },
-        y1: { position:'right', grid:{display:false}, ticks:{color:'#AEAEB2',font:{family:'IBM Plex Mono',size:9},callback:v=>v+'%'}, beginAtZero:true, max:100, title:{display:true,text:'Cloud',color:'#AEAEB2',font:{family:'IBM Plex Mono',size:9}} }
+        x: {
+          grid:{display:false, drawBorder:false},
+          ticks:{
+            color:'#8E8E93', font:{family:'IBM Plex Mono',size:10}, maxRotation:0, autoSkip:false,
+            callback: (val, i) => {
+              const hour = Math.floor(rows[i]?.hour ?? -1);
+              return hour >= 0 && hour % 3 === 0 ? labels[i] : '';
+            }
+          }
+        },
+        y: {
+          position:'left', beginAtZero:true, max:yMax,
+          grid:{color:'rgba(0,0,0,0.04)', drawBorder:false},
+          ticks:{
+            color:'#8E8E93', font:{family:'IBM Plex Mono',size:10},
+            maxTicksLimit: 5, padding: isMobileChart ? 2 : 4,
+            callback: v => Number.isInteger(v) ? v : null
+          },
+          title:{
+            display: !isMobileChart,
+            text:'kW', color:'#8E8E93', font:{family:'IBM Plex Mono',size:10}
+          },
+          afterFit: isMobileChart ? scale => { scale.width = Math.min(scale.width, 28); } : undefined
+        },
+        y1: {
+          position:'right', beginAtZero:true, max:100,
+          grid:{display:false},
+          ticks:{
+            color:'#8E8E93', font:{family:'IBM Plex Mono',size:9},
+            stepSize: 50, padding: isMobileChart ? 2 : 4,
+            callback: v => {
+              if (!(v === 0 || v === 50 || v === 100)) return null;
+              return isMobileChart ? String(v) : v + '%';
+            }
+          },
+          title:{
+            display: !isMobileChart,
+            text:'Cloud', color:'#8E8E93', font:{family:'IBM Plex Mono',size:9}
+          },
+          afterFit: isMobileChart ? scale => { scale.width = Math.min(scale.width, 26); } : undefined
+        }
       }
     },
     plugins: [
@@ -941,18 +1277,23 @@ function renderChart(day, isToday, nowH) {
       afterDraw(ci) {
         const {ctx,scales:{x,y}} = ci;
         const yPos = y.getPixelForValue(config.inverterKw);
+        const yTop = y.top;
         ctx.save();
+        if (yPos > yTop) {
+          ctx.fillStyle = 'rgba(184,114,0,0.08)';
+          ctx.fillRect(x.left, yTop, x.right - x.left, Math.max(0, yPos - yTop));
+        }
         ctx.beginPath();
         ctx.setLineDash([6,4]);
-        ctx.strokeStyle = 'rgba(229,57,53,0.45)';
+        ctx.strokeStyle = 'rgba(184,114,0,0.55)';
         ctx.lineWidth = 1.5;
         ctx.moveTo(x.left, yPos);
         ctx.lineTo(x.right, yPos);
         ctx.stroke();
-        // Label
-        ctx.fillStyle = 'rgba(229,57,53,0.6)';
+        ctx.fillStyle = 'rgba(184,114,0,0.75)';
         ctx.font = '500 9px IBM Plex Mono';
-        ctx.fillText(`${config.inverterKw}kW limit`, x.right - 62, yPos - 5);
+        const limitLbl = `${config.inverterKw}kW inverter limit`;
+        ctx.fillText(limitLbl, x.right - ctx.measureText(limitLbl).width - 4, yPos - 5);
         ctx.restore();
       }
     },
@@ -964,14 +1305,14 @@ function renderChart(day, isToday, nowH) {
           const idx=labels.indexOf(ts); if(idx<0) return;
           const xp=x.getPixelForValue(idx);
           ctx.save(); ctx.beginPath(); ctx.setLineDash([4,4]);
-          ctx.strokeStyle=col; ctx.lineWidth=1; ctx.globalAlpha=0.45;
+          ctx.strokeStyle=col; ctx.lineWidth=1; ctx.globalAlpha=0.4;
           ctx.moveTo(xp,y.top); ctx.lineTo(xp,y.bottom); ctx.stroke();
-          ctx.globalAlpha=0.65; ctx.fillStyle=col;
+          ctx.globalAlpha=0.7; ctx.fillStyle=col;
           ctx.font='500 9px IBM Plex Mono';
           ctx.fillText(lbl,xp+3,y.top+11); ctx.restore();
         };
-        if(day.sunriseH) draw(fmtTime(day.sunriseH),'#E8950E','☀ Rise');
-        if(day.sunsetH) draw(fmtTime(day.sunsetH),'#4A9EE8','☾ Set');
+        if(day.sunriseH) draw(fmtTime(day.sunriseH),'#8E8E93','Rise');
+        if(day.sunsetH) draw(fmtTime(day.sunsetH),'#8E8E93','Set');
       }
     },
     {
@@ -979,7 +1320,6 @@ function renderChart(day, isToday, nowH) {
       afterDraw(ci) {
         if (!isToday) return;
         const {ctx, scales:{x, y}} = ci;
-        // Find the two surrounding rows to interpolate exact position
         let i0 = -1;
         for (let i = 0; i < rows.length - 1; i++) {
           if (rows[i].hour <= nowH && rows[i+1].hour > nowH) { i0 = i; break; }
@@ -990,13 +1330,11 @@ function renderChart(day, isToday, nowH) {
         const kwNow = rows[i0].kw + frac * (rows[i0+1].kw - rows[i0].kw);
         const yPos = y.getPixelForValue(kwNow);
         ctx.save();
-        // Dotted crosshair lines
         ctx.setLineDash([2, 4]);
         ctx.lineWidth = 1;
         ctx.strokeStyle = 'rgba(232,149,14,0.55)';
         ctx.beginPath(); ctx.moveTo(xPos, yPos); ctx.lineTo(xPos, y.bottom); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(xPos, yPos); ctx.lineTo(x.left, yPos); ctx.stroke();
-        // Single orange dot
         ctx.setLineDash([]);
         ctx.beginPath();
         ctx.arc(xPos, yPos, 5, 0, Math.PI * 2);
@@ -1009,20 +1347,95 @@ function renderChart(day, isToday, nowH) {
       }
     }]
   });
+
+  canvas.onmouseleave = () => {
+    if (!chart) return;
+    chart.setActiveElements([]);
+    chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+    chart.update('none');
+  };
 }
 
-// Geocoding with autocomplete
+// Geocoding with autocomplete (Photon primary, Open-Meteo fallback)
 let acTimer = null;
 let acResults = [];
+let acHighlight = -1;
+
+function normalizePhoton(feature) {
+  const p = feature.properties || {};
+  const coords = feature.geometry?.coordinates || [];
+  const name = p.name || p.street || p.city || p.locality || 'Unknown';
+  const admin1 = p.district || p.locality || p.state || p.county || p.city || '';
+  return {
+    name,
+    admin1,
+    country: p.country || '',
+    latitude: coords[1],
+    longitude: coords[0],
+    elevation: null
+  };
+}
+
+function normalizeOpenMeteo(r) {
+  return {
+    name: r.name,
+    admin1: r.admin1 || '',
+    country: r.country || '',
+    latitude: r.latitude,
+    longitude: r.longitude,
+    elevation: r.elevation ?? null
+  };
+}
+
+function biasParams() {
+  if (config && (config.lat || config.lon)) {
+    return `&lat=${config.lat}&lon=${config.lon}`;
+  }
+  return '';
+}
+
+async function searchPhoton(query, limit = 5) {
+  const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=${limit}${biasParams()}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('Photon ' + r.status);
+  const d = await r.json();
+  return (d.features || []).map(normalizePhoton).filter(p => p.latitude != null && p.longitude != null);
+}
+
+async function searchOpenMeteo(query, count = 5) {
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=${count}&language=en`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('Geocode ' + r.status);
+  const d = await r.json();
+  return (d.results || []).map(normalizeOpenMeteo);
+}
+
+async function searchPlaces(query) {
+  try {
+    const photon = await searchPhoton(query, 5);
+    if (photon.length) return photon;
+  } catch (e) { /* fall through */ }
+  return searchOpenMeteo(query, 5);
+}
+
+function showAcEmpty(msg) {
+  const list = $('acList');
+  acResults = [];
+  acHighlight = -1;
+  list.innerHTML = `<div class="ac-item ac-empty">${msg}</div>`;
+  list.classList.remove('hidden');
+}
 
 function showAcList(results) {
   const list = $('acList');
   acResults = results;
-  if (!results.length) { list.classList.add('hidden'); return; }
+  acHighlight = -1;
+  if (!results.length) { showAcEmpty('No matches'); return; }
   list.innerHTML = '';
   results.forEach((r, i) => {
     const item = document.createElement('div');
     item.className = 'ac-item';
+    item.dataset.idx = String(i);
     const name = `${r.name}${r.admin1 ? ', ' + r.admin1 : ''}${r.country ? ', ' + r.country : ''}`;
     const detail = `${r.latitude.toFixed(2)}°, ${r.longitude.toFixed(2)}°` + (r.elevation != null ? ` · ${Math.round(r.elevation)}m` : '');
     item.innerHTML = `<span class="ac-name">${name}</span><span class="ac-detail">${detail}</span>`;
@@ -1032,6 +1445,12 @@ function showAcList(results) {
   list.classList.remove('hidden');
 }
 
+function updateAcHighlight() {
+  const items = [...$('acList').querySelectorAll('.ac-item:not(.ac-empty)')];
+  items.forEach((el, i) => el.classList.toggle('active', i === acHighlight));
+  if (acHighlight >= 0 && items[acHighlight]) items[acHighlight].scrollIntoView({ block: 'nearest' });
+}
+
 function selectAcResult(loc) {
   config.lat = loc.latitude;
   config.lon = loc.longitude;
@@ -1039,44 +1458,81 @@ function selectAcResult(loc) {
   $('addressInput').value = '';
   $('acList').classList.add('hidden');
   acResults = [];
+  acHighlight = -1;
   saveConfig(); populateFields(); fetchForecast();
+}
+
+function commitOrShowPlaces(results) {
+  if (!results.length) { alert('Location not found'); showAcEmpty('No matches'); return; }
+  if (results.length === 1) { selectAcResult(results[0]); return; }
+  showAcList(results);
 }
 
 async function acSearch(query) {
   if (query.length < 2) { $('acList').classList.add('hidden'); return; }
   try {
-    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=en`);
-    const d = await r.json();
-    // Only show if input still matches (avoid stale results)
+    const results = await searchPlaces(query);
+    if ($('addressInput').value.trim().toLowerCase() !== query.toLowerCase()) return;
+    if (!results.length) showAcEmpty('No matches');
+    else showAcList(results);
+  } catch (e) {
     if ($('addressInput').value.trim().toLowerCase() === query.toLowerCase()) {
-      showAcList(d.results || []);
+      showAcEmpty('Search unavailable');
     }
-  } catch(e) { /* silently fail for typeahead */ }
+  }
 }
 
 async function geocode() {
   const addr = $('addressInput').value.trim();
   if (!addr) return;
-  // If we have autocomplete results, select the first one
-  if (acResults.length) { selectAcResult(acResults[0]); return; }
+  // Never auto-pick a stale suggestion — only commit a highlighted item or fresh search
+  if (acResults.length && acHighlight >= 0 && acHighlight < acResults.length) {
+    selectAcResult(acResults[acHighlight]);
+    return;
+  }
   try {
-    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(addr)}&count=1&language=en`);
-    const d = await r.json();
-    if (!d.results?.length) { alert('Location not found'); return; }
-    selectAcResult(d.results[0]);
-  } catch(e) { alert('Geocoding failed'); }
+    const results = await searchPlaces(addr);
+    if ($('addressInput').value.trim().toLowerCase() !== addr.toLowerCase()) return;
+    commitOrShowPlaces(results);
+  } catch (e) {
+    alert('Geocoding failed');
+  }
 }
 
 // Events
 $('addressInput').addEventListener('input', e => {
   clearTimeout(acTimer);
+  acResults = [];
+  acHighlight = -1;
   const q = e.target.value.trim();
   if (q.length < 2) { $('acList').classList.add('hidden'); return; }
   acTimer = setTimeout(() => acSearch(q), 250);
 });
 $('addressInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') { e.preventDefault(); geocode(); }
-  if (e.key === 'Escape') { $('acList').classList.add('hidden'); }
+  const listOpen = !$('acList').classList.contains('hidden');
+  const items = acResults.length;
+  if (e.key === 'ArrowDown' && listOpen && items) {
+    e.preventDefault();
+    acHighlight = (acHighlight + 1) % items;
+    updateAcHighlight();
+    return;
+  }
+  if (e.key === 'ArrowUp' && listOpen && items) {
+    e.preventDefault();
+    acHighlight = acHighlight <= 0 ? items - 1 : acHighlight - 1;
+    updateAcHighlight();
+    return;
+  }
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (listOpen && acHighlight >= 0 && acResults[acHighlight]) {
+      selectAcResult(acResults[acHighlight]);
+    } else {
+      geocode();
+    }
+    return;
+  }
+  if (e.key === 'Escape') { $('acList').classList.add('hidden'); acHighlight = -1; }
 });
 // Close dropdown when clicking outside
 document.addEventListener('click', e => {
@@ -1084,17 +1540,29 @@ document.addEventListener('click', e => {
 });
 
 $('headerGear').addEventListener('click', () => {
-  const h = $('configPanel').classList.toggle('hidden');
-  $('headerGear').classList.toggle('active', !h);
+  const opening = $('configPanel').classList.contains('hidden');
+  if (opening) {
+    $('configPanel').classList.remove('hidden');
+    $('configSummaryCard').classList.add('hidden');
+    $('headerGear').classList.add('active');
+  } else {
+    $('configPanel').classList.add('hidden');
+    $('headerGear').classList.remove('active');
+    if (window.matchMedia('(min-width: 900px)').matches && config && (config.lat || config.lon)) {
+      $('configSummaryCard').classList.remove('hidden');
+    }
+  }
 });
 // Desktop: summary card → expand config panel
 $('configSummaryCard').addEventListener('click', () => {
   $('configSummaryCard').classList.add('hidden');
   $('configPanel').classList.remove('hidden');
+  $('headerGear').classList.add('active');
 });
 // Desktop: collapse button → back to summary card
 $('configCollapseBtn').addEventListener('click', () => {
   $('configPanel').classList.add('hidden');
+  $('headerGear').classList.remove('active');
   if (!!(config.lat || config.lon)) $('configSummaryCard').classList.remove('hidden');
 });
 $('searchBtn').addEventListener('click', geocode);

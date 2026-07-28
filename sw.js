@@ -1,10 +1,10 @@
-// v3 — 2026-03-30
-const CACHE_NAME = 'solar-forecast-v3';
+// v4 — 2026-07-28
+const CACHE_NAME = 'solar-forecast-v4';
 
 // CDN assets only — versioned/immutable, safe to cache-first indefinitely
 const CDN_ASSETS = [
   'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js',
-  'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap'
+  'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500&display=swap'
 ];
 
 self.addEventListener('install', event => {
@@ -26,8 +26,9 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // Pass Open-Meteo API calls straight through
+  // Pass forecast / geocoding API calls straight through
   if (event.request.url.includes('open-meteo.com')) return;
+  if (event.request.url.includes('photon.komoot.io')) return;
 
   // Network-first for the app shell (index.html / root) — always gets latest on deploy
   const url = new URL(event.request.url);

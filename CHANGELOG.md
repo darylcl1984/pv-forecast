@@ -4,6 +4,34 @@ Versioning: `1.0.x` bug fix · `1.x.0` new feature · `x.0.0` breaking change
 
 ---
 
+## [1.4.0] — 2026-07-28
+
+### Added
+- Photon (OpenStreetMap) place search for streets, suburbs, and cities; Open-Meteo geocoding kept as fallback
+- Location bias from saved/GPS coordinates when searching
+- Autocomplete keyboard navigation (↑/↓/Enter/Escape) and explicit multi-result picker (no silent first-hit commit)
+- Soft solar atmospheric background wash and spacing/display CSS tokens
+- Power meter with NOW fill and peak tick aligned under Forecast Peak / Peak so far
+
+### Changed
+- Estimated kWh promoted to hero metric; Peak/Now as secondary metrics on a shared one-line stats row (mobile + desktop)
+- Day cards, chart, and EV strip de-carded; selected day uses warm sun-light wash with amber rail; header sun logo warmed to amber
+- Chart: actual vs forecast join without hour gap; quieter cloud fill; sparse axes; mobile kW/Cloud labels moved into legend flanks for a wider plot
+- Chart inverter clip labelled **inverter limit** (legend + dashed line)
+- EV charge window strip integrated under the chart at full section width
+- Location placeholder and Places attribution updated for Photon/OSM
+- Chart tooltip surface warmed to match app surfaces; amber glow leftovers unified to `#E8950E`
+- Service worker cache bumped to v4; Photon API requests bypass the SW cache
+
+### Removed
+- Redundant inverter kW limit caption from the stats meter card (shown on the chart only)
+
+### Fixed
+- Full street addresses failing to resolve (Open-Meteo place-name-only API)
+- Ambiguous suburb Search auto-picking the wrong country via `count=1` / stale autocomplete cache
+
+---
+
 ## [1.3.0] — 2026-03-30
 
 ### Added

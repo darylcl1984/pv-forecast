@@ -17,7 +17,8 @@ Most solar forecast tools are either locked behind inverter vendor apps, require
 ## Features
 
 - **Configurable system parameters** — array size, inverter limit, performance ratio, tilt, and azimuth; inline hints explain each field
-- **7-day forecast** — colour-coded daily cards with kWh output, weather, and temperature; tap any day for an hourly PV chart with cloud cover overlay and sunrise/sunset markers
+- **7-day forecast** — colour-coded daily cards with kWh output, weather, and temperature; tap any day for an hourly PV chart with cloud cover overlay, inverter limit, and sunrise/sunset markers
+- **Street-level place search** — Photon/OpenStreetMap autocomplete with Open-Meteo geocoding fallback
 - **EV charge window detection** — finds the longest consecutive block above your charger's kW threshold and rates it great / fair / low yield
 - **PWA installable** — Add to Home Screen on Android and iOS; service worker keeps the app available offline with a 6hr data cache
 - **No backend** — single HTML file, no API key, no account required; deployable to any static host or GitHub Pages
@@ -81,7 +82,8 @@ The script produces per-day and overall PR statistics, identifies clipped hours,
 - `sw.js` — service worker for PWA caching (network-first for app shell, cache-first for CDN assets)
 - `manifest.json` + SVG icons — PWA install support for Android and iOS
 - [Chart.js 4.4.1](https://www.chartjs.org/) via CDN
-- [Open-Meteo API](https://open-meteo.com/) (free tier, CC BY 4.0) — GTI forecast and geocoding
+- [Open-Meteo API](https://open-meteo.com/) (free tier, CC BY 4.0) — GTI forecast
+- [Photon](https://photon.komoot.io/) (OpenStreetMap) — place search / geocoding, with Open-Meteo geocoding as fallback
 - Google Fonts: Outfit · IBM Plex Mono · Space Grotesk
 
 ## Limitations
@@ -96,4 +98,4 @@ MIT
 
 ## Attribution
 
-Weather data provided by [Open-Meteo](https://open-meteo.com/) under CC BY 4.0.
+Weather data provided by [Open-Meteo](https://open-meteo.com/) under CC BY 4.0. Place search via [Photon](https://photon.komoot.io/) / © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
