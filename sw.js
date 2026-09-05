@@ -1,7 +1,19 @@
-// v4 — 2026-07-28
-const CACHE_NAME = 'solar-forecast-v4';
+// v5 — 2026-09-05
+const CACHE_NAME = 'solar-forecast-v5';
 
-// CDN assets only — versioned/immutable, safe to cache-first indefinitely
+const SHELL_ASSETS = [
+  './',
+  './index.html',
+  './manifest.json',
+  './icons/icon-48.png',
+  './icons/icon-72.png',
+  './icons/icon-96.png',
+  './icons/icon-144.png',
+  './icons/icon-192.png',
+  './icons/icon-512.png'
+];
+
+// CDN assets — versioned/immutable, safe to cache-first indefinitely
 const CDN_ASSETS = [
   'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js',
   'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500&display=swap'
@@ -10,19 +22,25 @@ const CDN_ASSETS = [
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => Promise.allSettled(CDN_ASSETS.map(url => cache.add(url))))
+      .then(cache => Promise.allSettled(
+        [...SHELL_ASSETS, ...CDN_ASSETS].map(url => cache.add(url))
+      ))
       .then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-      ))
-      .then(() => self.clients.claim())
-  );
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const hasShell = await cache.match('./') || await cache.match('./index.html');
+    // Keep the previous cache if this version never stored a document —
+    // otherwise a bump while offline bricks the installed app.
+    if (hasShell) {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)));
+    }
+    await self.clients.claim();
+  })());
 });
 
 self.addEventListener('fetch', event => {
@@ -30,10 +48,13 @@ self.addEventListener('fetch', event => {
   if (event.request.url.includes('open-meteo.com')) return;
   if (event.request.url.includes('photon.komoot.io')) return;
 
-  // Network-first for the app shell (index.html / root) — always gets latest on deploy
   const url = new URL(event.request.url);
-  const isAppShell = url.pathname === '/' || url.pathname.endsWith('index.html');
-  if (isAppShell) {
+  const isNavigate = event.request.mode === 'navigate'
+    || event.request.destination === 'document'
+    || url.pathname.endsWith('index.html');
+
+  // Network-first for navigations (GitHub Pages lives at /pv-forecast/, not /)
+  if (isNavigate) {
     event.respondWith(
       fetch(event.request)
         .then(response => {
@@ -43,12 +64,13 @@ self.addEventListener('fetch', event => {
           }
           return response;
         })
-        .catch(() => caches.match(event.request)) // offline fallback
+        .catch(() => caches.match(event.request)
+          .then(cached => cached || caches.match('./index.html') || caches.match('./')))
     );
     return;
   }
 
-  // Cache-first for CDN assets (Chart.js, fonts) — immutable, no need to re-fetch
+  // Cache-first for CDN / static assets — with offline fallback
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
@@ -58,7 +80,7 @@ self.addEventListener('fetch', event => {
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         }
         return response;
-      });
+      }).catch(() => caches.match(event.request));
     })
   );
 });

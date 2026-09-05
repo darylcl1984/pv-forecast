@@ -38,9 +38,9 @@ All computation runs in the browser. No server, no API keys, no accounts.
 ## Quick Start
 
 1. Clone this repo
-2. Open `index.html` in a browser — or deploy to any static host
+2. Serve it over HTTPS (or `localhost`) — geolocation and the service worker need a secure context. GitHub Pages is fine. Opening `index.html` as a `file://` page will skip GPS and install.
 3. Allow location access (or search for your address manually)
-4. Configure your system parameters: array size (kW), inverter limit (kW), tilt, azimuth, performance ratio
+4. Confirm array size, inverter limit, tilt, azimuth, and performance ratio, then tap **Update Forecast**. Settings stay open until you do — allowing location alone does not finish setup.
 
 ### GitHub Pages Deployment
 
@@ -59,28 +59,28 @@ Your app will be live at `https://<username>.github.io/<repo-name>/`
 | Inverter (kW) | 8 | Inverter output limit |
 | Performance Ratio | 0.80 | System efficiency factor (typically 0.75–0.85) |
 | Tilt (°) | 22.5 | Panel tilt from horizontal |
-| Azimuth (°) | 180 | Panel direction — Open-Meteo convention: 0°=south, 180°=north |
+| Azimuth (°) | Hemisphere | Panel direction — Open-Meteo convention: 0°=south, 180°=north. First-run default is 0° north of the equator and 180° south of it |
 | Forecast Days | 7 | 1–16 days ahead |
 | EV Threshold (kW) | 4 | Minimum output for EV charge window detection |
 
-**Azimuth note:** Open-Meteo uses 0°=south convention (not 0°=north). For southern hemisphere north-facing panels, use ~180°. For east-facing use -90°, west-facing use 90°.
+**Azimuth note:** Open-Meteo uses 0°=south convention (not 0°=north). For southern hemisphere north-facing panels, use ~180°. For east-facing use -90°, west-facing use 90°. First-run GPS/search sets this from the sign of latitude; change it if your roof does not face the equator.
 
 ## Calibration
 
-The repo includes `tools/calibrate_pr.py`, a standalone Python script for calibrating your performance ratio against real inverter data. It reads Sungrow CSV exports and fetches matching GTI data from Open-Meteo to back-calculate your actual PR. **Don't commit your CSV exports** — they contain real production data; they're blocked by `.gitignore` by default.
+The repo includes `tools/calibrate_pr.py`, a standalone Python script for calibrating your performance ratio against real inverter data. It reads Sungrow CSV exports from `tools/` (or the current directory) and fetches matching GTI from Open-Meteo's Historical Forecast API — the same product the PWA uses. **Set `LAT` and `LON` in the script before running.** **Don't commit your CSV exports** — they contain real production data; they're blocked by `.gitignore` by default.
 
 ```bash
-# Place your Sungrow 5-minute CSV exports in tools/
+# Place your Sungrow 5-minute CSV exports in tools/, edit LAT/LON/tilt/azimuth, then:
 python tools/calibrate_pr.py
 ```
 
-The script produces per-day and overall PR statistics, identifies clipped hours, and recommends whether your current PR setting needs adjustment.
+The script produces per-day and overall PR statistics, identifies clipped hours (using the hourly peak, not the mean), and recommends whether your current PR setting needs adjustment. Hourly inverter samples are joined to GTI on the preceding-hour window (stamp 14:00 = 13:00–14:00).
 
 ## Tech Stack
 
 - Single HTML file (`index.html`) — HTML, CSS, JS, no build tools, no framework
-- `sw.js` — service worker for PWA caching (network-first for app shell, cache-first for CDN assets)
-- `manifest.json` + SVG icons — PWA install support for Android and iOS
+- `sw.js` — service worker for PWA caching (network-first for navigations, cache-first for CDN assets)
+- `manifest.json` + PNG icons — PWA install support for Android and iOS
 - [Chart.js 4.4.1](https://www.chartjs.org/) via CDN
 - [Open-Meteo API](https://open-meteo.com/) (free tier, CC BY 4.0) — GTI forecast
 - [Photon](https://photon.komoot.io/) (OpenStreetMap) — place search / geocoding, with Open-Meteo geocoding as fallback
@@ -89,7 +89,7 @@ The script produces per-day and overall PR statistics, identifies clipped hours,
 ## Limitations
 
 - **Forecast accuracy:** GTI is a weather-model forecast, not measured irradiance. Partly cloudy days can show ±50% error vs actual production.
-- **No actual production overlay:** The app shows forecast only. Comparing against real inverter output would require vendor API integration.
+- **No measured production overlay:** The chart’s solid “To now” line is still the GTI model for hours that have already elapsed, not inverter output. Comparing against real production would require vendor API integration.
 - **Free API tier:** 10K calls/day, non-commercial use. Fine for personal use; commercial deployment requires an Open-Meteo paid plan.
 
 ## License

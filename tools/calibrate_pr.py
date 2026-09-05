@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 """
 Solar PR Calibration Tool
-Run locally: python calibrate_pr.py
+Run from repo root: python tools/calibrate_pr.py
 
-Reads Sungrow CSV exports from current directory and fetches matching
-GTI data from Open-Meteo to back-calculate your actual Performance Ratio.
+Reads Sungrow CSV exports from this directory (tools/) and fetches matching
+GTI from Open-Meteo's Historical Forecast API — the same radiation product
+the PWA uses — to back-calculate your Performance Ratio.
+
+Open-Meteo global_tilted_irradiance is a preceding-hour mean (stamp 14:00 =
+13:00–14:00). Inverter 5-minute samples are aggregated onto that same
+hour-ending window before they are joined.
 """
 
+from pathlib import Path
 import pandas as pd
 import requests
-import json
-import glob
 import sys
 
 # ── System constants (edit to match your setup) ──
@@ -22,6 +26,10 @@ AZIMUTH    = 180    # Panel azimuth (Open-Meteo convention: 0=south, 180=north)
 LAT        = 0.0    # Your latitude  — replace before running
 LON        = 0.0    # Your longitude — replace before running
 
+HERE = Path(__file__).resolve().parent
+HISTORICAL_FORECAST = "https://historical-forecast-api.open-meteo.com/v1/forecast"
+LIVE_FORECAST = "https://api.open-meteo.com/v1/forecast"
+
 def load_sungrow_csvs(paths):
     dfs = []
     for f in paths:
@@ -31,42 +39,78 @@ def load_sungrow_csvs(paths):
         dfs.append(df)
     return pd.concat(dfs, ignore_index=True).sort_values('Time').reset_index(drop=True)
 
-def fetch_gti(start_date, end_date):
-    url = (
-        f"https://api.open-meteo.com/v1/forecast"
+def _gti_url(host, start_date, end_date):
+    return (
+        f"{host}"
         f"?latitude={LAT}&longitude={LON}"
         f"&hourly=global_tilted_irradiance"
         f"&timezone=auto"
         f"&start_date={start_date}&end_date={end_date}"
         f"&tilt={TILT}&azimuth={AZIMUTH}"
     )
-    resp = requests.get(url, timeout=15)
-    if resp.status_code != 200:
-        print(f"API error {resp.status_code}, trying archive API...")
-        url2 = url.replace("api.open-meteo.com/v1/forecast", "archive-api.open-meteo.com/v1/archive")
-        resp = requests.get(url2, timeout=15)
-    resp.raise_for_status()
-    data = resp.json()
-    return pd.DataFrame({
-        'hour': pd.to_datetime(data['hourly']['time']),
-        'gti_wm2': data['hourly']['global_tilted_irradiance']
-    })
+
+
+def fetch_gti(start_date, end_date):
+    """Fetch GTI from Historical Forecast (same family as the PWA), then live forecast."""
+    last_err = None
+    for host, label in (
+        (HISTORICAL_FORECAST, "historical forecast"),
+        (LIVE_FORECAST, "live forecast"),
+    ):
+        url = _gti_url(host, start_date, end_date)
+        print(f"  Trying {label}…")
+        try:
+            resp = requests.get(url, timeout=15)
+            if resp.status_code != 200:
+                print(f"    HTTP {resp.status_code}")
+                last_err = f"HTTP {resp.status_code} from {label}"
+                continue
+            data = resp.json()
+            hourly = data.get("hourly") or {}
+            gti = hourly.get("global_tilted_irradiance") or []
+            times = hourly.get("time") or []
+            if not times or not any(v is not None for v in gti):
+                print("    No GTI values in response")
+                last_err = f"empty GTI from {label}"
+                continue
+            print(f"    OK ({label})")
+            return pd.DataFrame({
+                "hour": pd.to_datetime(times),
+                "gti_wm2": gti,
+            })
+        except requests.RequestException as e:
+            print(f"    {e}")
+            last_err = str(e)
+    raise RuntimeError(
+        f"Could not fetch forecast GTI ({last_err}). "
+        "Not falling back to ERA5 archive — that PR would not match the PWA."
+    )
 
 def kw_at_gti(gti):
     return min(INVERTER_KW, (PV_KW * ASSUMED_PR * gti) / 1000)
 
 def main():
-    # Find CSVs
-    paths = sorted(glob.glob("*.csv"))
-    if not paths:
-        print("No CSV files found in current directory.")
-        print("Place your Sungrow export CSVs here and re-run.")
+    if LAT == 0.0 and LON == 0.0:
+        print("Set LAT and LON in calibrate_pr.py to your site before running.")
+        print("Leaving them at 0,0 would fetch GTI for the Gulf of Guinea.")
         sys.exit(1)
 
-    print(f"Found {len(paths)} CSV file(s): {', '.join(paths)}")
+    print(f"Site: {LAT}, {LON}  tilt={TILT}°  az={AZIMUTH}°  "
+          f"array={PV_KW}kW  inv={INVERTER_KW}kW  assumed PR={ASSUMED_PR}")
+
+    paths = sorted(HERE.glob("*.csv"))
+    if not paths:
+        paths = sorted(Path.cwd().glob("*.csv"))
+    if not paths:
+        print(f"No CSV files found in {HERE} or the current directory.")
+        print("Place your Sungrow export CSVs in tools/ and re-run.")
+        sys.exit(1)
+
+    print(f"Found {len(paths)} CSV file(s): {', '.join(p.name for p in paths)}")
     actual = load_sungrow_csvs(paths)
     actual['PV_kW'] = actual['PV(W)'] / 1000.0
-    actual['hour'] = actual['Time'].dt.floor('h')
+    # Hour-ending label: 13:00–13:59 production joins GTI stamped 14:00 (13:00–14:00 mean)
+    actual['hour'] = actual['Time'].dt.floor('h') + pd.Timedelta(hours=1)
 
     dates = actual['Time'].dt.date.unique()
     start_date = str(min(dates))
@@ -95,7 +139,7 @@ def main():
     # Predictions and back-calc PR
     merged['predicted_kw'] = merged['gti_wm2'].apply(kw_at_gti)
     merged['actual_pr'] = (merged['pv_kw_mean'] * 1000) / (PV_KW * merged['gti_wm2'])
-    merged['clipped'] = merged['pv_kw_mean'] >= (INVERTER_KW * 0.95)
+    merged['clipped'] = merged['pv_kw_max'] >= (INVERTER_KW * 0.95)
     merged['date'] = merged['hour'].dt.date
 
     unclipped = merged[~merged['clipped']]

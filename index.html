@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="PV Forecast">
@@ -87,8 +87,10 @@
     background: transparent; border-radius: var(--radius-sm);
     border: none; text-align: center;
     cursor: pointer; transition: background 0.2s ease, box-shadow 0.2s ease;
-    user-select: none; -webkit-user-select: none;
+    user-select: none; -webkit-user-select: none; margin: 0;
+    font: inherit; color: inherit; appearance: none; -webkit-appearance: none;
   }
+  .day-card:focus-visible { outline: 2px solid var(--sun); outline-offset: 2px; }
   .day-card.active {
     background: var(--sun-light);
     box-shadow: inset 3px 0 0 var(--sun);
@@ -661,12 +663,12 @@
     <div class="chart-canvas-wrap">
       <div class="spinner-overlay" id="loadingOverlay"><div class="spinner"></div></div>
       <div class="error-msg hidden" id="errorMsg"></div>
-      <canvas id="solarChart"></canvas>
+      <canvas id="solarChart" role="img" aria-label="Hourly PV forecast chart"></canvas>
     </div>
     <div class="chart-legend">
       <span class="chart-legend-axis">kW</span>
       <div class="chart-legend-items">
-        <span><span class="legend-dot" style="background:var(--sun)"></span> Actual</span>
+        <span><span class="legend-dot" style="background:var(--sun)"></span> To now</span>
         <span><span class="legend-dot" style="background:transparent;border:1.5px dashed var(--sun)"></span> Forecast</span>
         <span><span class="legend-dot" style="background:rgba(144,164,174,0.55)"></span> Cloud %</span>
         <span><span class="legend-dot" style="background:var(--ev);opacity:0.5"></span> EV Window</span>
@@ -699,38 +701,102 @@
 const DEFAULTS = {
   lat: 0, lon: 0, systemKw: 10, inverterKw: 8, pr: 0.80, tilt: 22.5, azimuth: 180,
   forecastDays: 7, evThreshold: 4, locationName: '',
-  presets: []
+  presets: [], configured: false
 };
 
 let config, allDays = [], selectedDayIdx = 0, chart = null;
+let utcOffsetSeconds = 0;
+let forecastGen = 0;
+let lastForecastLat = null, lastForecastLon = null;
 const $ = id => document.getElementById(id);
+const CACHE_TTL_MS = 6 * 3600 * 1000;
 
 function loadConfig() {
   try {
     const s = localStorage.getItem('solar-forecast-config');
-    if (s) { const parsed = JSON.parse(s); if (parsed.lat) return { ...DEFAULTS, ...parsed }; }
+    if (!s) return null;
+    const parsed = JSON.parse(s);
+    const latOk = Number.isFinite(parsed.lat);
+    const lonOk = Number.isFinite(parsed.lon);
+    if (!latOk || !lonOk || (parsed.lat === 0 && parsed.lon === 0)) return null;
+    const merged = { ...DEFAULTS, ...parsed };
+    // Pre-1.5.0 saves have no configured flag — treat as already set up
+    if (parsed.configured == null) merged.configured = true;
+    return merged;
   } catch(e) {}
   return null;
 }
 function saveConfig() {
   try { localStorage.setItem('solar-forecast-config', JSON.stringify(config)); } catch(e) {}
 }
-function cacheData(data) {
-  try { localStorage.setItem('solar-forecast-cache', JSON.stringify({ ts: Date.now(), data })); } catch(e) {}
+function cacheCoordsMatch(c) {
+  if (!c || !config) return false;
+  const near = (a, b) => Math.abs((a ?? 0) - (b ?? 0)) < 1e-4;
+  return near(c.lat, config.lat) && near(c.lon, config.lon)
+    && near(c.tilt, config.tilt) && near(c.azimuth, config.azimuth)
+    && Number(c.forecastDays) === Number(config.forecastDays);
 }
-function getCachedData() {
+function cacheData(data) {
+  try {
+    localStorage.setItem('solar-forecast-cache', JSON.stringify({
+      ts: Date.now(),
+      lat: config.lat, lon: config.lon,
+      tilt: config.tilt, azimuth: config.azimuth,
+      forecastDays: config.forecastDays,
+      data
+    }));
+  } catch(e) {}
+}
+function getCachedData(allowExpired = false) {
   try {
     const c = JSON.parse(localStorage.getItem('solar-forecast-cache'));
-    if (c && Date.now() - c.ts < 6*3600*1000) return c.data;
+    if (!c || !c.data || !cacheCoordsMatch(c)) return null;
+    const age = Date.now() - c.ts;
+    if (age < CACHE_TTL_MS) return { data: c.data, ts: c.ts, expired: false, age };
+    if (allowExpired) return { data: c.data, ts: c.ts, expired: true, age };
   } catch(e) {}
   return null;
 }
+function fmtCacheAge(ms) {
+  const min = Math.max(1, Math.round(ms / 60000));
+  if (min < 60) return min + 'm ago';
+  const hr = Math.round(min / 60);
+  return hr + 'h ago';
+}
+function showCacheBadge(entry) {
+  const el = $('offlineBadge');
+  if (!entry) { el.classList.remove('show'); return; }
+  el.textContent = (entry.expired ? 'Offline · ' : 'Cached · ') + fmtCacheAge(entry.age);
+  el.classList.add('show');
+}
 
+function defaultAzimuth(lat) { return lat >= 0 ? 0 : 180; }
+
+// Open-Meteo GTI is the preceding-hour mean (14:00 = 13:00–14:00). Summing hourly kW is the kWh integral.
 function kwAtGti(gti) { return Math.min(config.inverterKw, (config.systemKw * config.pr * gti) / 1000); }
-function parseHour(iso) { const d = new Date(iso); return d.getHours() + d.getMinutes() / 60; }
+function parseHour(iso) {
+  const m = String(iso).match(/T(\d{2}):(\d{2})/);
+  if (m) return parseInt(m[1], 10) + parseInt(m[2], 10) / 60;
+  const d = new Date(iso);
+  return d.getHours() + d.getMinutes() / 60;
+}
+function siteNowDate() { return new Date(Date.now() + utcOffsetSeconds * 1000); }
+function siteTodayStr() {
+  const d = siteNowDate();
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+}
+function siteNowH() {
+  const d = siteNowDate();
+  return d.getUTCHours() + d.getUTCMinutes() / 60 + d.getUTCSeconds() / 3600;
+}
 function fmtTime(h) { const hh = Math.floor(h), mm = Math.round((h-hh)*60); return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`; }
 function dayName(iso) { return new Date(iso+'T12:00:00').toLocaleDateString('en-AU',{weekday:'short'}); }
 function dayDate(iso) { return new Date(iso+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'}); }
+function siteDateLabel(opts) {
+  const d = siteNowDate();
+  const utcNoon = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12);
+  return new Intl.DateTimeFormat('en-AU', { ...opts, timeZone: 'UTC' }).format(new Date(utcNoon));
+}
 
 function populateFields() {
   $('cfgSystem').value = config.systemKw;
@@ -741,33 +807,31 @@ function populateFields() {
   $('cfgDays').value = config.forecastDays;
   $('cfgEvThreshold').value = config.evThreshold;
   $('locationLabel').textContent = (config.locationName || 'Set location below') + ' · ' +
-    new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short'});
-  const shortDate = new Date().toLocaleDateString('en-AU', {weekday:'short', day:'numeric', month:'short'});
+    siteDateLabel({weekday:'long', day:'numeric', month:'short'});
+  const shortDate = siteDateLabel({weekday:'short', day:'numeric', month:'short'});
   $('sectionTitle').textContent = config.locationName ? config.locationName + ' · ' + shortDate : '';
   $('configSummary').textContent = config.locationName ?
     `${config.systemKw}kW · ${config.inverterKw}kW inv · PR ${config.pr} · ${config.tilt}° tilt · ${config.azimuth}° az` : '';
-  // Ring: show when location not yet set
-  const hasLocation = !!(config.lat || config.lon);
-  $('headerGearWrap').classList.toggle('no-ring', hasLocation);
+  const configured = !!config.configured;
+  $('headerGearWrap').classList.toggle('no-ring', configured);
   markDefaults();
-  // Desktop: toggle between summary card (collapsed) and full config panel
-  if (window.matchMedia('(min-width: 900px)').matches) {
-    if (hasLocation) {
-      $('summaryLoc').textContent = config.locationName || '';
-      $('summaryParams').textContent = `${config.systemKw}kW · ${config.inverterKw}kW inv · PR ${config.pr} · ${config.tilt}° tilt · ${config.azimuth}° az`;
-      $('configSummaryCard').classList.remove('hidden');
-      $('configPanel').classList.add('hidden');
-    } else {
-      $('configSummaryCard').classList.add('hidden');
-      $('configPanel').classList.remove('hidden');
-    }
+  if (!configured) {
+    $('configSummaryCard').classList.add('hidden');
+    $('configPanel').classList.remove('hidden');
+    $('headerGear').classList.add('active');
+  } else if (window.matchMedia('(min-width: 900px)').matches) {
+    $('summaryLoc').textContent = config.locationName || '';
+    $('summaryParams').textContent = `${config.systemKw}kW · ${config.inverterKw}kW inv · PR ${config.pr} · ${config.tilt}° tilt · ${config.azimuth}° az`;
+    $('configSummaryCard').classList.remove('hidden');
+    $('configPanel').classList.add('hidden');
+    $('headerGear').classList.remove('active');
   }
   const pc = $('presetContainer');
   pc.innerHTML = '';
   (config.presets||[]).forEach(p => {
     const btn = document.createElement('button');
     btn.className = 'btn-secondary'; btn.textContent = p.label;
-    btn.onclick = () => { Object.assign(config,p); config.locationName = p.label; saveConfig(); populateFields(); fetchForecast(); };
+    btn.onclick = () => { Object.assign(config,p); config.locationName = p.label; config.configured = true; saveConfig(); populateFields(); fetchForecast(); };
     pc.appendChild(btn);
   });
 }
@@ -804,6 +868,8 @@ async function initLocation() {
       pos => {
         config.lat = Math.round(pos.coords.latitude * 100) / 100;
         config.lon = Math.round(pos.coords.longitude * 100) / 100;
+        config.azimuth = defaultAzimuth(config.lat);
+        config.configured = false;
         config.locationName = `${config.lat.toFixed(2)}, ${config.lon.toFixed(2)}`;
         saveConfig(); populateFields(); fetchForecast();
       },
@@ -826,6 +892,7 @@ function showSetup() {
 // ── Fetch ──
 async function fetchForecast() {
   if (!config.lat && !config.lon) { showSetup(); return; }
+  const gen = ++forecastGen;
   $('loadingOverlay').classList.remove('hidden');
   $('errorMsg').classList.add('hidden');
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${config.lat}&longitude=${config.lon}`
@@ -836,15 +903,25 @@ async function fetchForecast() {
   let data;
   try {
     const resp = await fetch(url);
+    if (gen !== forecastGen) return;
     if (!resp.ok) throw new Error('API '+resp.status);
     data = await resp.json();
     cacheData(data);
-    $('offlineBadge').classList.remove('show');
+    showCacheBadge(null);
   } catch(e) {
-    data = getCachedData();
-    if (data) { $('offlineBadge').classList.add('show'); }
-    else { $('errorMsg').textContent = 'Failed: '+e.message; $('errorMsg').classList.remove('hidden'); $('loadingOverlay').classList.add('hidden'); return; }
+    if (gen !== forecastGen) return;
+    const cached = getCachedData(false) || getCachedData(true);
+    if (cached) {
+      data = cached.data;
+      showCacheBadge(cached);
+    } else {
+      $('errorMsg').textContent = 'Failed: '+e.message;
+      $('errorMsg').classList.remove('hidden');
+      $('loadingOverlay').classList.add('hidden');
+      return;
+    }
   }
+  if (gen !== forecastGen) return;
   processData(data);
   $('loadingOverlay').classList.add('hidden');
 }
@@ -878,6 +955,14 @@ function wmoLabel(code) {
 }
 
 function processData(data) {
+  if (typeof data.utc_offset_seconds === 'number') utcOffsetSeconds = data.utc_offset_seconds;
+  if (config) {
+    $('locationLabel').textContent = (config.locationName || 'Set location below') + ' · ' +
+      siteDateLabel({weekday:'long', day:'numeric', month:'short'});
+    const shortDate = siteDateLabel({weekday:'short', day:'numeric', month:'short'});
+    $('sectionTitle').textContent = config.locationName ? config.locationName + ' · ' + shortDate : '';
+  }
+
   const hours = data.hourly.time;
   const gti = data.hourly.global_tilted_irradiance;
   const clouds = data.hourly.cloud_cover;
@@ -895,6 +980,11 @@ function processData(data) {
     dayMap[ds].push({ time: fmtTime(parseHour(hours[i])), hour: parseHour(hours[i]), gti: gti[i]??0, kw: kwAtGti(gti[i]??0), cloud: clouds[i]??0 });
   }
 
+  const prevDate = allDays[selectedDayIdx]?.date;
+  const locChanged = lastForecastLat !== config.lat || lastForecastLon !== config.lon;
+  lastForecastLat = config.lat;
+  lastForecastLon = config.lon;
+
   allDays = [];
   dailyDates.forEach((d,i) => {
     const rows = dayMap[d] || [];
@@ -907,18 +997,20 @@ function processData(data) {
     const srH = sunrises[i] ? parseHour(sunrises[i]) : null;
     const ssH = sunsets[i] ? parseHour(sunsets[i]) : null;
 
-    // EV window: longest consecutive run above threshold during daylight
-    let evStart=null, evEnd=null, evBest=0, curS=null, curL=0;
+    // EV window: longest consecutive run above threshold during daylight (sunrise–sunset)
+    let evStart=null, evEnd=null, evBest=0, curS=null, curEnd=null, curL=0;
     for (const r of rows) {
-      if (Math.round(r.kw * 10) / 10 >= config.evThreshold && r.hour >= 6 && r.hour <= 18) {
+      const inDaylight = (srH == null || r.hour >= srH) && (ssH == null || r.hour <= ssH);
+      if (Math.round(r.kw * 10) / 10 >= config.evThreshold && inDaylight) {
         if (curS === null) curS = r.hour;
+        curEnd = r.hour;
         curL++;
       } else {
-        if (curL > evBest) { evBest=curL; evStart=curS; evEnd=r.hour; }
-        curS=null; curL=0;
+        if (curL > evBest) { evBest=curL; evStart=curS; evEnd=curEnd; }
+        curS=null; curEnd=null; curL=0;
       }
     }
-    if (curL > evBest) { evBest=curL; evStart=curS; evEnd=curS+curL; }
+    if (curL > evBest) { evBest=curL; evStart=curS; evEnd=curEnd; }
 
     allDays.push({ date:d, rows, totalKwh, peakKw, peakHour, avgCloud, sunriseH:srH, sunsetH:ssH,
       sunriseStr: srH?fmtTime(srH):'—', sunsetStr: ssH?fmtTime(ssH):'—',
@@ -927,7 +1019,14 @@ function processData(data) {
       wCode: weatherCodes[i] ?? 0 });
   });
 
-  if (selectedDayIdx >= allDays.length) selectedDayIdx = 0;
+  const todayStr = siteTodayStr();
+  const todayIdx = allDays.findIndex(d => d.date === todayStr);
+  if (locChanged) {
+    selectedDayIdx = todayIdx >= 0 ? todayIdx : 0;
+  } else {
+    const keep = allDays.findIndex(d => d.date === prevDate);
+    selectedDayIdx = keep >= 0 ? keep : (todayIdx >= 0 ? todayIdx : 0);
+  }
   renderWeekly();
   renderSelectedDay();
 }
@@ -949,8 +1048,11 @@ function renderWeekly() {
   const scroll = $('weeklyScroll');
   scroll.innerHTML = '';
   allDays.forEach((day,i) => {
-    const card = document.createElement('div');
+    const card = document.createElement('button');
+    card.type = 'button';
     card.className = 'day-card'+(i===selectedDayIdx?' active':'');
+    card.setAttribute('aria-pressed', i===selectedDayIdx ? 'true' : 'false');
+    card.setAttribute('aria-label', `${dayName(day.date)} ${dayDate(day.date)}, ${day.totalKwh.toFixed(1)} kilowatt hours`);
     const wi = wmoEmoji(day.wCode);
     const temps = day.tMin !== null ? `${Math.round(day.tMin)}°/${Math.round(day.tMax)}°` : '';
     const evClass = day.evHours > 2 ? 'ev-good' : day.evHours >= 1 ? 'ev-part' : 'ev-none';
@@ -1068,11 +1170,12 @@ function renderSelectedDay() {
     dailyCtx.textContent = 'avg day';
   }
 
-  const now = new Date();
-  const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const today = siteTodayStr();
   const isToday = day.date === today;
-  const nowH = now.getHours() + now.getMinutes()/60;
+  const nowH = siteNowH();
   renderPowerMeter(day, isToday, nowH);
+  $('solarChart').setAttribute('aria-label',
+    `Hourly PV forecast for ${dayName(day.date)} ${dayDate(day.date)}, ${day.totalKwh.toFixed(1)} kilowatt hours estimated`);
 
   $('sunriseTime').textContent = day.sunriseStr;
   $('sunsetTime').textContent = day.sunsetStr;
@@ -1107,14 +1210,15 @@ function renderChart(day, isToday, nowH, todayStr) {
   const labels = rows.map(r=>r.time);
   const kwData = rows.map(r=>r.kw);
   const cloudData = rows.map(r=>r.cloud);
-  const today = todayStr || (() => {
-    const n = new Date();
-    return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
-  })();
+  const today = todayStr || siteTodayStr();
 
-  const evData = rows.map(r =>
-    (day.evStart!==null && r.hour>=day.evStart && r.hour<=day.evEnd) ? r.kw : null
-  );
+  const evData = rows.map((r, i) => {
+    if (day.evStart == null || day.evEnd == null) return null;
+    if (r.hour >= day.evStart && r.hour <= day.evEnd) return r.kw;
+    // 1-hour window: duplicate the last good kW onto the next categorical slot so Chart.js can fill
+    if (day.evHours === 1 && i > 0 && rows[i-1].hour === day.evEnd) return rows[i-1].kw;
+    return null;
+  });
 
   // Past = solid+fill · Future = dashed, no fill — share splitIdx so lines meet
   const isPastDay = day.date < today;
@@ -1182,7 +1286,7 @@ function renderChart(day, isToday, nowH, todayStr) {
           yAxisID:'y', order:3
         },
         {
-          label:'Actual', data:pastKw,
+          label:'To now', data:pastKw,
           borderColor:'#E8950E', borderWidth:2.5, backgroundColor:grad, fill:true, tension:0.25,
           pointRadius:0, pointHoverRadius:5, pointHoverBackgroundColor:'#E8950E',
           spanGaps:false, yAxisID:'y', order:1
@@ -1221,7 +1325,7 @@ function renderChart(day, isToday, nowH, todayStr) {
               if (item.dataset.label === 'Cloud') return `☁ ${cloudData[item.dataIndex]}%`;
               if (item.dataset.label === 'EV Window') return null;
               if (item.raw == null) return null;
-              return `${Number(item.raw).toFixed(1)}kW · ${rows[item.dataIndex].gti.toFixed(0)}W/m²`;
+              return `${Number(item.raw).toFixed(1)}kW · ${rows[item.dataIndex].gti.toFixed(0)}W/m² · hour avg`;
             }
           },
           filter: item => item.dataset.label !== 'EV Window' && item.raw != null
@@ -1301,9 +1405,16 @@ function renderChart(day, isToday, nowH, todayStr) {
       id:'sunLines',
       afterDraw(ci) {
         const {ctx,scales:{x,y}} = ci;
-        const draw = (ts,col,lbl) => {
-          const idx=labels.indexOf(ts); if(idx<0) return;
-          const xp=x.getPixelForValue(idx);
+        const drawAtHour = (hourVal, col, lbl) => {
+          if (hourVal == null || rows.length < 2) return;
+          let i0 = -1;
+          for (let i = 0; i < rows.length - 1; i++) {
+            if (rows[i].hour <= hourVal && rows[i+1].hour > hourVal) { i0 = i; break; }
+          }
+          if (i0 < 0) return;
+          const span = rows[i0+1].hour - rows[i0].hour;
+          const frac = span ? (hourVal - rows[i0].hour) / span : 0;
+          const xp = x.getPixelForValue(i0) + frac * (x.getPixelForValue(i0+1) - x.getPixelForValue(i0));
           ctx.save(); ctx.beginPath(); ctx.setLineDash([4,4]);
           ctx.strokeStyle=col; ctx.lineWidth=1; ctx.globalAlpha=0.4;
           ctx.moveTo(xp,y.top); ctx.lineTo(xp,y.bottom); ctx.stroke();
@@ -1311,8 +1422,8 @@ function renderChart(day, isToday, nowH, todayStr) {
           ctx.font='500 9px IBM Plex Mono';
           ctx.fillText(lbl,xp+3,y.top+11); ctx.restore();
         };
-        if(day.sunriseH) draw(fmtTime(day.sunriseH),'#8E8E93','Rise');
-        if(day.sunsetH) draw(fmtTime(day.sunsetH),'#8E8E93','Set');
+        drawAtHour(day.sunriseH,'#8E8E93','Rise');
+        drawAtHour(day.sunsetH,'#8E8E93','Set');
       }
     },
     {
@@ -1454,6 +1565,7 @@ function updateAcHighlight() {
 function selectAcResult(loc) {
   config.lat = loc.latitude;
   config.lon = loc.longitude;
+  if (!config.configured) config.azimuth = defaultAzimuth(loc.latitude);
   config.locationName = `${loc.name}${loc.admin1 ? ', ' + loc.admin1 : ''}`;
   $('addressInput').value = '';
   $('acList').classList.add('hidden');
@@ -1548,7 +1660,7 @@ $('headerGear').addEventListener('click', () => {
   } else {
     $('configPanel').classList.add('hidden');
     $('headerGear').classList.remove('active');
-    if (window.matchMedia('(min-width: 900px)').matches && config && (config.lat || config.lon)) {
+    if (window.matchMedia('(min-width: 900px)').matches && config && config.configured) {
       $('configSummaryCard').classList.remove('hidden');
     }
   }
@@ -1563,10 +1675,10 @@ $('configSummaryCard').addEventListener('click', () => {
 $('configCollapseBtn').addEventListener('click', () => {
   $('configPanel').classList.add('hidden');
   $('headerGear').classList.remove('active');
-  if (!!(config.lat || config.lon)) $('configSummaryCard').classList.remove('hidden');
+  if (config && config.configured) $('configSummaryCard').classList.remove('hidden');
 });
 $('searchBtn').addEventListener('click', geocode);
-$('applyBtn').addEventListener('click',()=>{ readFields(); saveConfig(); populateFields(); fetchForecast(); });
+$('applyBtn').addEventListener('click',()=>{ readFields(); config.configured = true; saveConfig(); populateFields(); fetchForecast(); });
 
 // Field hints — tap i to toggle inline explanation
 document.querySelectorAll('.hint-icon').forEach(icon => {
@@ -1594,6 +1706,14 @@ document.addEventListener('touchend',e=>{if(ts&&e.changedTouches[0].clientY-ts>1
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(() => {});
+  });
+  let swRefreshing = false;
+  let hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController) { hadController = true; return; }
+    if (swRefreshing) return;
+    swRefreshing = true;
+    location.reload();
   });
 }
 

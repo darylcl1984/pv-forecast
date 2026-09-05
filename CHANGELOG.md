@@ -4,6 +4,31 @@ Versioning: `1.0.x` bug fix · `1.x.0` new feature · `x.0.0` breaking change
 
 ---
 
+## [1.5.0] — 2026-09-05
+
+### Added
+- First-run azimuth follows hemisphere (0° south north of the equator, 180° north south of it)
+- Chart Rise/Set markers placed between hourly ticks at the real sunrise/sunset minute
+- Day cards are buttons with keyboard focus and `aria-pressed`; chart canvas has an accessible name
+
+### Changed
+- Settings stay open (gear ring on) until **Update Forecast** — GPS or a place pick no longer hides config
+- Chart legend **To now** / **Forecast** (elapsed hours are still the GTI model, not inverter actuals)
+- EV charge window uses sunrise–sunset instead of a fixed 06:00–18:00 band
+- Offline badge shows cache age; expired cache is kept as a last resort
+- Hourly tooltip notes GTI is a preceding-hour average
+- Service worker cache bumped to v5; navigations (including GitHub Pages `/pv-forecast/`) are network-first; shell and icons are precached
+- `calibrate_pr.py` reads CSVs from `tools/`, refuses LAT/LON 0,0, uses Historical Forecast GTI, joins hour-ending windows, and flags clip from hourly peak
+
+### Fixed
+- Installed GitHub Pages clients staying on a stale `index.html` until `CACHE_NAME` was bumped
+- Forecast cache reused across location/tilt/azimuth changes; overlapping fetches could paint the previous site
+- “Today” / Now marker used the phone clock instead of the site timezone from Open-Meteo
+- Sunrise/sunset chart lines never drew (`indexOf` on minute times vs hourly labels)
+- Pinch-zoom blocked by `user-scalable=no`
+
+---
+
 ## [1.4.0] — 2026-07-28
 
 ### Added
