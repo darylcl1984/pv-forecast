@@ -1204,6 +1204,7 @@ function renderSelectedDay() {
 
 function renderChart(day, isToday, nowH, todayStr) {
   const canvas = $('solarChart');
+  const ctx = canvas.getContext('2d');
   const isMobileChart = window.matchMedia('(max-width: 899px)').matches;
   const rows = day.rows.filter(r => r.hour>=5 && r.hour<=21);
   const labels = rows.map(r=>r.time);
@@ -1211,9 +1212,13 @@ function renderChart(day, isToday, nowH, todayStr) {
   const cloudData = rows.map(r=>r.cloud);
   const today = todayStr || siteTodayStr();
 
-  const inEvWindow = r =>
-    day.evStart != null && day.evEnd != null && r.hour >= day.evStart && r.hour <= day.evEnd;
-  const evData = rows.map(r => inEvWindow(r) ? r.kw : null);
+  const evData = rows.map((r, i) => {
+    if (day.evStart == null || day.evEnd == null) return null;
+    if (r.hour >= day.evStart && r.hour <= day.evEnd) return r.kw;
+    // 1-hour window: duplicate the last good kW onto the next categorical slot so Chart.js can fill
+    if (day.evHours === 1 && i > 0 && rows[i-1].hour === day.evEnd) return rows[i-1].kw;
+    return null;
+  });
 
   // Past = solid+fill · Future = dashed, no fill — share splitIdx so lines meet
   const isPastDay = day.date < today;
@@ -1235,6 +1240,21 @@ function renderChart(day, isToday, nowH, todayStr) {
     return splitIdx >= 0 && i >= splitIdx ? r.kw : null;
   });
 
+  const grad = ctx.createLinearGradient(0,0,0,260);
+  grad.addColorStop(0,'rgba(232,149,14,0.22)');
+  grad.addColorStop(0.5,'rgba(232,149,14,0.06)');
+  grad.addColorStop(1,'rgba(232,149,14,0)');
+
+  const patCanvas = document.createElement('canvas');
+  patCanvas.width = 7; patCanvas.height = 7;
+  const patCtx = patCanvas.getContext('2d');
+  patCtx.fillStyle = 'rgba(52,199,89,0.07)';
+  patCtx.fillRect(0, 0, 7, 7);
+  patCtx.strokeStyle = 'rgba(52,199,89,0.42)';
+  patCtx.lineWidth = 1.5;
+  patCtx.beginPath(); patCtx.moveTo(0,7); patCtx.lineTo(7,0); patCtx.stroke();
+  const evGrad = ctx.createPattern(patCanvas, 'repeat');
+
   const rawMax = Math.max(config.inverterKw * 1.15, ...(kwData.length ? kwData : [0]));
   const yMax = Math.max(1, Math.ceil(rawMax));
 
@@ -1247,25 +1267,6 @@ function renderChart(day, isToday, nowH, todayStr) {
     chart = null;
   }
 
-  // Patterns/gradients must be created AFTER destroy — resetting the canvas
-  // invalidates any CanvasPattern bound to the old context.
-  const ctx = canvas.getContext('2d');
-  const wrapH = (canvas.parentElement && canvas.parentElement.clientHeight) || (isMobileChart ? 260 : 320);
-  const grad = ctx.createLinearGradient(0,0,0,wrapH);
-  grad.addColorStop(0,'rgba(232,149,14,0.22)');
-  grad.addColorStop(0.5,'rgba(232,149,14,0.06)');
-  grad.addColorStop(1,'rgba(232,149,14,0)');
-
-  const patCanvas = document.createElement('canvas');
-  patCanvas.width = 8; patCanvas.height = 8;
-  const patCtx = patCanvas.getContext('2d');
-  patCtx.fillStyle = 'rgba(52,199,89,0.08)';
-  patCtx.fillRect(0, 0, 8, 8);
-  patCtx.strokeStyle = 'rgba(52,199,89,0.45)';
-  patCtx.lineWidth = 1.25;
-  patCtx.beginPath(); patCtx.moveTo(-2,8); patCtx.lineTo(8,-2); patCtx.stroke();
-  patCtx.beginPath(); patCtx.moveTo(0,10); patCtx.lineTo(10,0); patCtx.stroke();
-
   chart = new Chart(ctx, {
     type:'line',
     data: {
@@ -1274,19 +1275,19 @@ function renderChart(day, isToday, nowH, todayStr) {
         {
           label:'Cloud', data:cloudData,
           borderColor:'rgba(144,164,174,0.55)', backgroundColor:'rgba(144,164,174,0.08)',
-          borderWidth:1, borderDash:[4,3], fill:true, tension:0, pointRadius:0,
+          borderWidth:1, borderDash:[4,3], fill:true, tension:0.3, pointRadius:0,
           yAxisID:'y1', order:4
         },
         {
           label:'EV Window', data:evData,
           borderColor:'rgba(52,199,89,0.55)', borderWidth:1.5, borderDash:[4,3],
-          backgroundColor:'transparent', fill:false, tension:0,
+          backgroundColor:evGrad, fill:true, tension:0.35,
           pointRadius:0, spanGaps:false,
           yAxisID:'y', order:3
         },
         {
           label:'To now', data:pastKw,
-          borderColor:'#E8950E', borderWidth:2.5, backgroundColor:grad, fill:true, tension:0,
+          borderColor:'#E8950E', borderWidth:2.5, backgroundColor:grad, fill:true, tension:0.25,
           pointRadius:0, pointHoverRadius:5, pointHoverBackgroundColor:'#E8950E',
           spanGaps:false, yAxisID:'y', order:1
         },
@@ -1301,7 +1302,6 @@ function renderChart(day, isToday, nowH, todayStr) {
     },
     options: {
       responsive:true, maintainAspectRatio:false,
-      animation:false,
       interaction:{mode:'index',intersect:false},
       layout: {
         padding: isMobileChart
@@ -1376,52 +1376,6 @@ function renderChart(day, isToday, nowH, todayStr) {
       }
     },
     plugins: [
-    {
-      // Hatch is drawn from Chart.js point pixels (not a filled line dataset).
-      // Chart.js area-fill + tension glitches on Chromium/Windows, especially
-      // on a wide desktop plot with leading nulls (typical EV window).
-      id:'evHatch',
-      beforeDatasetsDraw(ci) {
-        const dsIdx = ci.data.datasets.findIndex(d => d.label === 'EV Window');
-        if (dsIdx < 0) return;
-        const meta = ci.getDatasetMeta(dsIdx);
-        const area = ci.chartArea;
-        const yScale = ci.scales && ci.scales.y;
-        const xScale = ci.scales && ci.scales.x;
-        if (!meta || !area || !yScale) return;
-        const pts = [];
-        meta.data.forEach((pt, i) => {
-          if (evData[i] == null || !pt) return;
-          if (!Number.isFinite(pt.x) || !Number.isFinite(pt.y)) return;
-          pts.push(pt);
-        });
-        if (!pts.length) return;
-        const ctx = ci.ctx;
-        const yBase = yScale.bottom;
-        let xEnd = pts[pts.length - 1].x;
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(area.left, area.top, area.right - area.left, area.bottom - area.top);
-        ctx.clip();
-        ctx.beginPath();
-        ctx.moveTo(pts[0].x, yBase);
-        for (const pt of pts) ctx.lineTo(pt.x, pt.y);
-        if (pts.length === 1) {
-          const i0 = evData.findIndex(v => v != null);
-          const step = (xScale && rows.length > 1) ? (xScale.getPixelForValue(1) - xScale.getPixelForValue(0)) : 16;
-          xEnd = (i0 >= 0 && i0 + 1 < evData.length && xScale)
-            ? xScale.getPixelForValue(i0 + 1)
-            : pts[0].x + step;
-          ctx.lineTo(xEnd, pts[0].y);
-        }
-        ctx.lineTo(xEnd, yBase);
-        ctx.closePath();
-        const pat = ctx.createPattern(patCanvas, 'repeat');
-        ctx.fillStyle = pat || 'rgba(52,199,89,0.16)';
-        ctx.fill();
-        ctx.restore();
-      }
-    },
     {
       id:'inverterLimit',
       afterDraw(ci) {

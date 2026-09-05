@@ -4,13 +4,6 @@ Versioning: `1.0.x` bug fix · `1.x.0` new feature · `x.0.0` breaking change
 
 ---
 
-## [1.5.1] — 2026-09-07
-
-### Fixed
-- Desktop EV window hatch: Chart.js area-fill + tension glitches on Chromium (worse on a wide plot / after refresh). Hatch is now painted from the chart’s own point positions after the canvas is rebuilt, so it stays inside the charge window.
-
----
-
 ## [1.5.0] — 2026-09-05
 
 ### Added
