@@ -1281,7 +1281,7 @@ function renderChart(day, isToday, nowH, todayStr) {
         {
           label:'EV Window', data:evData,
           borderColor:'rgba(52,199,89,0.55)', borderWidth:1.5, borderDash:[4,3],
-          backgroundColor:evGrad, fill:true, tension:0.35,
+          backgroundColor:'transparent', fill:false, tension:0,
           pointRadius:0, spanGaps:false,
           yAxisID:'y', order:3
         },
@@ -1376,6 +1376,42 @@ function renderChart(day, isToday, nowH, todayStr) {
       }
     },
     plugins: [
+    {
+      // Linear hatch under the EV window. Chart.js fill+tension with leading
+      // nulls leaks a huge triangle on a wide desktop plot.
+      id:'evHatch',
+      beforeDatasetDraw(ci, args) {
+        if (ci.data.datasets[args.index]?.label !== 'EV Window') return;
+        const idxs = [];
+        for (let i = 0; i < evData.length; i++) {
+          if (evData[i] != null) idxs.push(i);
+        }
+        if (!idxs.length) return;
+        const {ctx, chartArea, scales:{x, y}} = ci;
+        if (!chartArea || !x || !y) return;
+        const y0 = y.getPixelForValue(0);
+        const xAt = i => x.getPixelForValue(i);
+        let xLast = xAt(idxs[idxs.length - 1]);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(chartArea.left, chartArea.top, chartArea.right - chartArea.left, chartArea.bottom - chartArea.top);
+        ctx.clip();
+        ctx.beginPath();
+        ctx.moveTo(xAt(idxs[0]), y0);
+        for (const i of idxs) ctx.lineTo(xAt(i), y.getPixelForValue(evData[i]));
+        if (idxs.length === 1) {
+          const i = idxs[0];
+          const step = (rows.length > 1) ? (xAt(1) - xAt(0)) : 12;
+          xLast = (i + 1 < rows.length) ? xAt(i + 1) : xAt(i) + step;
+          ctx.lineTo(xLast, y.getPixelForValue(evData[i]));
+        }
+        ctx.lineTo(xLast, y0);
+        ctx.closePath();
+        ctx.fillStyle = evGrad || 'rgba(52,199,89,0.18)';
+        ctx.fill();
+        ctx.restore();
+      }
+    },
     {
       id:'inverterLimit',
       afterDraw(ci) {

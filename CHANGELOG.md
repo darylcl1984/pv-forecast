@@ -4,6 +4,13 @@ Versioning: `1.0.x` bug fix · `1.x.0` new feature · `x.0.0` breaking change
 
 ---
 
+## [1.5.1] — 2026-09-07
+
+### Fixed
+- Desktop EV window hatch leaking outside the charge window (Chart.js area fill + tension with leading nulls on a wide plot). Hatch is now a clipped linear path under the window only.
+
+---
+
 ## [1.5.0] — 2026-09-05
 
 ### Added
